@@ -1,6 +1,6 @@
-# Crop Service
+# Maintenance Service
 
-Microservice quản lý giống cây trồng và chu kỳ trồng trọt trong hệ thống nông nghiệp, được xây dựng bằng Go và tuân theo nguyên tắc Clean Architecture.
+Microservice quản lý lịch trình bảo trì thiết bị IoT trong hệ thống công nghiệp, được xây dựng bằng Go và tuân theo nguyên tắc Clean Architecture.
 
 ## 🏗️ Kiến trúc
 
@@ -9,18 +9,14 @@ Dự án này tuân theo **Clean Architecture** với sự phân tách rõ ràng
 ```
 ├── domain/           # Tầng logic nghiệp vụ
 │   ├── entity/       # Các thực thể nghiệp vụ cốt lõi
-│   │   ├── plant_variety.go      # Entity giống cây trồng
-│   │   └── planting_cycle.go     # Entity chu kỳ trồng
+│   │   └── maintenance_schedule.go     # Entity lịch trình bảo trì
 │   ├── repository/   # Giao diện truy cập dữ liệu
-│   │   ├── plant_variety_repository.go
-│   │   └── planting_cycle_repository.go
+│   │   └── maintenance_schedule_repository.go
 │   └── usecase/      # Các trường hợp sử dụng nghiệp vụ
-│       ├── plant_variety/        # Use cases giống cây trồng
-│       └── planting_cycle/       # Use cases chu kỳ trồng
+│       └── maintenance_schedule/       # Use cases lịch trình bảo trì
 ├── infrastructure/   # Các mối quan tâm bên ngoài
 │   ├── grpc_service/ # Triển khai API gRPC
-│   │   ├── plant_variety/        # gRPC handlers giống cây trồng
-│   │   └── planting_cycle/       # gRPC handlers chu kỳ trồng
+│   │   └── maintenance_schedule/      # gRPC handlers lịch trình bảo trì
 │   └── repo/         # Triển khai repository cơ sở dữ liệu
 ├── bootstrap/        # Khởi tạo ứng dụng
 └── cmd/             # Điểm vào ứng dụng
@@ -28,23 +24,20 @@ Dự án này tuân theo **Clean Architecture** với sự phân tách rõ ràng
 
 ## 🚀 Tính năng
 
-### Quản lý Giống cây trồng
-- ✅ Tạo, đọc, cập nhật, xóa giống cây trồng
-- ✅ Liệt kê giống cây với bộ lọc (loại, mùa vụ, trạng thái)
-- ✅ Tìm kiếm giống cây theo điều kiện môi trường (nhiệt độ, độ ẩm, pH)
-- ✅ Lọc theo yêu cầu ánh sáng và nước
-- ✅ Lọc theo mùa vụ và loại cây
-- ✅ Hỗ trợ phân trang và sắp xếp
-- ✅ Xác thực dữ liệu đầu vào
-
-### Quản lý Chu kỳ trồng
-- ✅ Tạo, đọc, cập nhật, xóa chu kỳ trồng
-- ✅ Liệt kê chu kỳ với bộ lọc (khu vực, giống cây, trạng thái, ngày tháng)
-- ✅ Theo dõi tiến độ chu kỳ trồng (lập kế hoạch → gieo hạt → cấy ghép → phát triển → thu hoạch)
-- ✅ Quản lý lịch gieo hạt và thu hoạch
-- ✅ Báo cáo chu kỳ sắp thu hoạch và quá hạn
-- ✅ Lấy chu kỳ theo giống cây và khu vực
-- ✅ Cập nhật trạng thái và ngày thu hoạch
+### Quản lý Lịch trình Bảo trì
+- ✅ Tạo, đọc, cập nhật, xóa lịch trình bảo trì
+- ✅ Liệt kê lịch trình với bộ lọc (thiết bị, loại bảo trì, trạng thái, ngày tháng)
+- ✅ Quản lý các loại bảo trì (vệ sinh, hiệu chuẩn, thay thế, sửa chữa, kiểm tra, cập nhật phần mềm)
+- ✅ Phân loại bảo trì (phòng ngừa, khắc phục, khẩn cấp, định kỳ)
+- ✅ Quản lý mức độ ưu tiên (thấp, trung bình, cao, nghiêm trọng)
+- ✅ Theo dõi tiến độ bảo trì (đã lên lịch → đang tiến hành → hoàn thành)
+- ✅ Quản lý kỹ thuật viên và thông tin liên hệ
+- ✅ Theo dõi chi phí và thời gian bảo trì
+- ✅ Lưu trữ hình ảnh trước và sau bảo trì
+- ✅ Quản lý linh kiện thay thế và công cụ cần thiết
+- ✅ Ghi nhận số liệu trước và sau bảo trì
+- ✅ Đánh giá chất lượng bảo trì
+- ✅ Lập lịch bảo trì định kỳ
 
 ## 🛠️ Công nghệ sử dụng
 
@@ -69,7 +62,7 @@ Dự án này tuân theo **Clean Architecture** với sự phân tách rõ ràng
 ### 1. Clone repository
 ```bash
 git clone <repository-url>
-cd farm-service
+cd maintenance-service
 ```
 
 ### 2. Cài đặt dependencies
@@ -95,8 +88,8 @@ cp dev.config.yml config.yml
 Cập nhật chuỗi kết nối cơ sở dữ liệu trong `config.yml`:
 ```yaml
 node_env: "development"
-url_db: "postgres://postgres:123456@localhost:5432/crop_service_db?sslmode=disable"
-name_service: "CropService"
+url_db: "postgres://postgres:123456@localhost:5432/maintenance_service_db?sslmode=disable"
+name_service: "MaintenanceService"
 port_grpc: 50054
 host_grpc: "localhost"
 interval_check: "20s"
@@ -150,29 +143,24 @@ make docker-seed
 
 ### Dữ liệu mẫu bao gồm:
 
-**15 giống cây trồng với thông tin chi tiết:**
-- **Rau cải**: Cải bắp, Cải ngọt, Cải xoong, Cải xoăn
-- **Rau củ**: Cà rốt, Khoai tây, Củ cải trắng  
-- **Rau quả**: Cà chua, Ớt chuông, Dưa chuột
-- **Rau thơm**: Rau mùi, Húng quế, Bạc hà
-- **Rau lá xanh**: Rau muống, Rau dền
+**Lịch trình bảo trì thiết bị IoT với thông tin chi tiết:**
+- **Loại bảo trì**: Vệ sinh, hiệu chuẩn, thay thế, sửa chữa, kiểm tra, cập nhật phần mềm
+- **Phân loại**: Phòng ngừa, khắc phục, khẩn cấp, định kỳ
+- **Mức độ ưu tiên**: Thấp, trung bình, cao, nghiêm trọng
+- **Trạng thái**: Đã lên lịch, đang tiến hành, hoàn thành, hủy, hoãn
 
-Mỗi giống cây bao gồm:
-- Thông tin cơ bản (tên, tên khoa học, loại, mùa vụ)
-- Điều kiện môi trường tối ưu (nhiệt độ, độ ẩm, pH)
-- Yêu cầu chăm sóc (nước, ánh sáng)
-- Thời gian phát triển và mô tả chi tiết
-
-**15 chu kỳ trồng với trạng thái đa dạng:**
-- Các chu kỳ với trạng thái khác nhau (lập kế hoạch, gieo hạt, cấy ghép, phát triển, ra hoa, thu hoạch, hoàn thành, thất bại)
-- Dữ liệu thực tế về ngày gieo hạt, cấy ghép, thu hoạch dự kiến và thực tế
-- Thông tin về số lượng cây, lô hạt giống và ghi chú
-- Liên kết với giống cây trồng và khu vực trồng
+Mỗi lịch trình bảo trì bao gồm:
+- Thông tin thiết bị và kỹ thuật viên phụ trách
+- Thời gian dự kiến và thực tế thực hiện
+- Chi phí và linh kiện thay thế
+- Số liệu trước và sau bảo trì
+- Hình ảnh minh chứng và ghi chú chi tiết
+- Đánh giá chất lượng và lịch bảo trì tiếp theo
 
 ## 📁 Cấu trúc Dự án
 
 ```
-crop-service/
+maintenance-service/
 ├── bootstrap/                 # Khởi tạo ứng dụng
 │   ├── app.go               # Khởi tạo app
 │   └── env.go               # Cấu hình môi trường
@@ -181,36 +169,26 @@ crop-service/
 │   └── client/             # gRPC client để test
 ├── domain/                  # Logic nghiệp vụ (Clean Architecture)
 │   ├── entity/             # Các thực thể nghiệp vụ cốt lõi
-│   │   ├── plant_variety.go      # Entity giống cây trồng và DTOs
-│   │   └── planting_cycle.go     # Entity chu kỳ trồng và DTOs
+│   │   └── maintenance_schedule.go     # Entity lịch trình bảo trì và DTOs
 │   ├── repository/         # Giao diện truy cập dữ liệu
-│   │   ├── plant_variety_repository.go
-│   │   └── planting_cycle_repository.go
+│   │   └── maintenance_schedule_repository.go
 │   └── usecase/            # Các trường hợp sử dụng nghiệp vụ
-│       ├── plant_variety/        # Use cases giống cây trồng
-│       │   ├── create_plant_variety_usecase.go
-│       │   ├── get_plant_variety_usecase.go
-│       │   ├── list_plant_variety_usecase.go
-│       │   ├── search_plant_varieties_usecase.go
-│       │   └── ... (các use case khác)
-│       └── planting_cycle/       # Use cases chu kỳ trồng
-│           ├── create_planting_cycle_usecase.go
-│           ├── get_planting_cycle_usecase.go
-│           ├── list_planting_cycle_usecase.go
-│           └── ... (các use case khác)
+│       └── maintenance_schedule/       # Use cases lịch trình bảo trì
+│           ├── create_maintenance_schedule_usecase.go
+│           ├── get_maintenance_schedule_usecase.go
+│           ├── list_maintenance_schedule_usecase.go
+│           ├── update_maintenance_schedule_usecase.go
+│           └── delete_maintenance_schedule_usecase.go
 ├── infrastructure/          # Các mối quan tâm bên ngoài
 │   ├── grpc_service/       # Triển khai API gRPC
-│   │   ├── plant_variety/        # gRPC handlers giống cây trồng
-│   │   ├── planting_cycle/       # gRPC handlers chu kỳ trồng
+│   │   ├── maintenance_schedule/      # gRPC handlers lịch trình bảo trì
 │   │   └── server.go             # Thiết lập gRPC server
 │   └── repo/               # Triển khai cơ sở dữ liệu
-│       ├── plant_variety_repository.go
-│       ├── planting_cycle_repository.go
-│       └── base.go
+│       ├── maintenance_schedule_repository.go
+│       └── init.go
 ├── migrations/              # Database migrations
 │   ├── 000000_common.up.sql
-│   ├── 000002_create_plant_varieties_table.up.sql
-│   ├── 000003_create_planting_cycles_table.up.sql
+│   ├── 000002_create_maintenance_schedules.up.sql
 │   └── seed/                     # Dữ liệu mẫu
 ├── script/seed/             # Script chèn dữ liệu mẫu
 ├── doc/                     # Tài liệu
@@ -239,37 +217,36 @@ make help            # Hiển thị tất cả lệnh có sẵn
 
 ## 📊 Mô hình Dữ liệu
 
-### Giống cây trồng (Plant Variety)
+### Lịch trình Bảo trì (Maintenance Schedule)
 - **ID**: Định danh duy nhất
-- **Name**: Tên giống cây trồng
-- **ScientificName**: Tên khoa học
-- **Category**: Loại cây (rau cải, rau củ, rau quả, rau thơm, rau lá xanh)
-- **GrowingSeason**: Mùa vụ phù hợp
-- **GrowthDurationDays**: Thời gian phát triển (ngày)
-- **OptimalTempMin/Max**: Nhiệt độ tối ưu (min/max)
-- **OptimalHumidityMin/Max**: Độ ẩm tối ưu (min/max)
-- **PHMin/Max**: Độ pH tối ưu (min/max)
-- **WaterRequirement**: Yêu cầu nước (thấp, trung bình, cao)
-- **LightRequirement**: Yêu cầu ánh sáng (ít, trung bình, nhiều)
-- **Description**: Mô tả chi tiết
-- **MediaID**: ID phương tiện truyền thông
-- **Status**: Trạng thái (active, inactive)
-- **CreatedBy**: Định danh người tạo
-- **Timestamps**: Thời gian tạo/cập nhật
-
-### Chu kỳ trồng (Planting Cycle)
-- **ID**: Định danh duy nhất
-- **CycleName**: Tên chu kỳ trồng
-- **GrowingZoneID**: ID khu vực trồng
-- **PlantVarietyID**: ID giống cây trồng
-- **SeedDate**: Ngày gieo hạt
-- **TransplantDate**: Ngày cấy ghép
-- **ExpectedHarvestDate**: Ngày thu hoạch dự kiến
-- **ActualHarvestDate**: Ngày thu hoạch thực tế
-- **PlantQuantity**: Số lượng cây
-- **SeedBatch**: Lô hạt giống
-- **Status**: Trạng thái (planning, seeding, transplanting, growing, flowering, harvesting, completed, failed)
-- **Notes**: Ghi chú
+- **DeviceID**: ID thiết bị IoT cần bảo trì
+- **MaintenanceType**: Loại bảo trì (cleaning, calibration, replacement, repair, inspection, software_update)
+- **MaintenanceCategory**: Phân loại bảo trì (preventive, corrective, emergency, routine)
+- **Priority**: Mức độ ưu tiên (low, medium, high, critical)
+- **ScheduledDate**: Ngày dự kiến thực hiện bảo trì
+- **EstimatedDurationHours**: Thời gian dự kiến (giờ)
+- **CompletedDate**: Ngày thực hiện xong bảo trì
+- **ActualDurationHours**: Thời gian thực tế (giờ)
+- **Technician**: Tên kỹ thuật viên phụ trách
+- **TechnicianContact**: Thông tin liên hệ của kỹ thuật viên
+- **Cost**: Chi phí bảo trì
+- **PartsReplaced**: Danh sách linh kiện đã thay thế (JSON)
+- **ToolsRequired**: Danh sách công cụ cần dùng (JSON)
+- **SafetyPrecautions**: Biện pháp an toàn cần lưu ý
+- **PreMaintenanceReadings**: Số liệu trước bảo trì (JSON)
+- **PostMaintenanceReadings**: Số liệu sau bảo trì (JSON)
+- **CalibrationValues**: Giá trị hiệu chuẩn (JSON)
+- **TestResults**: Kết quả kiểm tra sau bảo trì
+- **Status**: Trạng thái (scheduled, in_progress, completed, cancelled, postponed)
+- **CompletionRating**: Đánh giá chất lượng bảo trì (1-5)
+- **NextMaintenanceDate**: Ngày bảo trì tiếp theo
+- **MaintenanceIntervalDays**: Khoảng cách giữa các lần bảo trì (ngày)
+- **WarrantyImpact**: Ảnh hưởng đến bảo hành
+- **DowntimeMinutes**: Thời gian thiết bị ngưng hoạt động (phút)
+- **Notes**: Ghi chú thêm
+- **MaintenanceLog**: Nhật ký bảo trì
+- **BeforeImages**: Hình ảnh trước bảo trì (array)
+- **AfterImages**: Hình ảnh sau bảo trì (array)
 - **CreatedBy**: Định danh người tạo
 - **Timestamps**: Thời gian tạo/cập nhật
 
@@ -277,41 +254,26 @@ make help            # Hiển thị tất cả lệnh có sẵn
 
 Service cung cấp các endpoint gRPC:
 
-### Plant Variety Service
-- `CreatePlantVariety` - Tạo giống cây trồng mới
-- `GetPlantVariety` - Lấy thông tin giống cây trồng theo ID
-- `UpdatePlantVariety` - Cập nhật thông tin giống cây trồng
-- `DeletePlantVariety` - Xóa giống cây trồng
-- `ListPlantVarieties` - Liệt kê giống cây trồng với bộ lọc
-- `SearchPlantVarieties` - Tìm kiếm giống cây trồng
-- `GetActivePlantVarieties` - Lấy danh sách giống cây trồng đang hoạt động
-- `GetByCategory` - Lấy giống cây theo loại
-- `GetBySeason` - Lấy giống cây theo mùa vụ
-- `GetByStatus` - Lấy giống cây theo trạng thái
-- `GetByTemperatureRange` - Lấy giống cây theo khoảng nhiệt độ
-- `GetByHumidityRange` - Lấy giống cây theo khoảng độ ẩm
-- `GetByWaterRequirement` - Lấy giống cây theo yêu cầu nước
-- `GetByLightRequirement` - Lấy giống cây theo yêu cầu ánh sáng
-
-### Planting Cycle Service
-- `CreatePlantingCycle` - Tạo chu kỳ trồng mới
-- `GetPlantingCycle` - Lấy thông tin chu kỳ trồng theo ID
-- `UpdatePlantingCycle` - Cập nhật thông tin chu kỳ trồng
-- `DeletePlantingCycle` - Xóa chu kỳ trồng
-- `ListPlantingCycles` - Liệt kê chu kỳ trồng với bộ lọc
-- `GetActivePlantingCycles` - Lấy danh sách chu kỳ trồng đang hoạt động
-- `GetByVariety` - Lấy chu kỳ trồng theo giống cây
-- `GetByZone` - Lấy chu kỳ trồng theo khu vực
-- `GetByStatus` - Lấy chu kỳ trồng theo trạng thái
-- `GetByDateRange` - Lấy chu kỳ trồng theo khoảng ngày
-- `GetBySeedDateRange` - Lấy chu kỳ trồng theo khoảng ngày gieo hạt
-- `GetByHarvestDateRange` - Lấy chu kỳ trồng theo khoảng ngày thu hoạch
-- `GetUpcomingHarvests` - Lấy chu kỳ sắp thu hoạch
-- `GetOverdueHarvests` - Lấy chu kỳ thu hoạch quá hạn
-- `GetCycleWithDetails` - Lấy chu kỳ trồng với thông tin chi tiết
-- `GetCyclesWithDetails` - Lấy danh sách chu kỳ trồng với thông tin chi tiết
-- `UpdateStatus` - Cập nhật trạng thái chu kỳ trồng
-- `UpdateHarvestDate` - Cập nhật ngày thu hoạch
+### Maintenance Schedule Service
+- `CreateMaintenanceSchedule` - Tạo lịch trình bảo trì mới
+- `GetMaintenanceSchedule` - Lấy thông tin lịch trình bảo trì theo ID
+- `UpdateMaintenanceSchedule` - Cập nhật thông tin lịch trình bảo trì
+- `DeleteMaintenanceSchedule` - Xóa lịch trình bảo trì
+- `ListMaintenanceSchedules` - Liệt kê lịch trình bảo trì với bộ lọc
+- `GetByDevice` - Lấy lịch trình bảo trì theo thiết bị
+- `GetByTechnician` - Lấy lịch trình bảo trì theo kỹ thuật viên
+- `GetByStatus` - Lấy lịch trình bảo trì theo trạng thái
+- `GetByType` - Lấy lịch trình bảo trì theo loại bảo trì
+- `GetByCategory` - Lấy lịch trình bảo trì theo phân loại
+- `GetByPriority` - Lấy lịch trình bảo trì theo mức độ ưu tiên
+- `GetByDateRange` - Lấy lịch trình bảo trì theo khoảng ngày
+- `GetUpcomingMaintenance` - Lấy lịch trình bảo trì sắp tới
+- `GetOverdueMaintenance` - Lấy lịch trình bảo trì quá hạn
+- `GetCompletedMaintenance` - Lấy lịch trình bảo trì đã hoàn thành
+- `UpdateStatus` - Cập nhật trạng thái lịch trình bảo trì
+- `UpdateCompletion` - Cập nhật thông tin hoàn thành bảo trì
+- `GetMaintenanceHistory` - Lấy lịch sử bảo trì của thiết bị
+- `GetMaintenanceStatistics` - Lấy thống kê bảo trì
 
 ## 🧪 Testing
 
@@ -371,4 +333,4 @@ Dự án này được cấp phép theo MIT License.
 
 ---
 
-**Lưu ý**: Service này được thiết kế để quản lý giống cây trồng và chu kỳ trồng trọt trong hệ thống nông nghiệp, tuân theo các nguyên tắc kiến trúc microservice để có thể mở rộng và bảo trì dễ dàng.
+**Lưu ý**: Service này được thiết kế để quản lý lịch trình bảo trì thiết bị IoT trong hệ thống công nghiệp, tuân theo các nguyên tắc kiến trúc microservice để có thể mở rộng và bảo trì dễ dàng.
