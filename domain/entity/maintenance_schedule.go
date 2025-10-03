@@ -19,12 +19,12 @@ type MaintenanceSchedule struct {
 	Technician              string
 	TechnicianContact       string
 	Cost                    float64
-	PartsReplaced           string
-	ToolsRequired           string
+	PartsReplaced           []any
+	ToolsRequired           []any
 	SafetyPrecautions       string
-	PreMaintenanceReadings  string
-	PostMaintenanceReadings string
-	CalibrationValues       string
+	PreMaintenanceReadings  map[string]any
+	PostMaintenanceReadings map[string]any
+	CalibrationValues       map[string]any
 	TestResults             string
 	Status                  Status
 	CompletionRating        int
@@ -34,8 +34,8 @@ type MaintenanceSchedule struct {
 	DowntimeMinutes         int
 	Notes                   string
 	MaintenanceLog          string
-	BeforeImages            string // json
-	AfterImages             string // json
+	BeforeImages            []string `pg:",array"`
+	AfterImages             []string `pg:",array"`
 	CreatedBy               string
 	CreatedAt               time.Time
 	UpdatedAt               *time.Time

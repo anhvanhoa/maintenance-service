@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"production_service/infrastructure/repo"
+
 	"github.com/anhvanhoa/service-core/bootstrap/db"
 	"github.com/anhvanhoa/service-core/domain/log"
 	"github.com/go-pg/pg/v10"
@@ -8,9 +10,10 @@ import (
 )
 
 type Application struct {
-	Env *Env
-	DB  *pg.DB
-	Log *log.LogGRPCImpl
+	Env   *Env
+	DB    *pg.DB
+	Log   *log.LogGRPCImpl
+	Repos repo.Repositories
 }
 
 func App() *Application {
@@ -24,8 +27,9 @@ func App() *Application {
 	})
 
 	return &Application{
-		Env: &env,
-		DB:  db,
-		Log: log,
+		Env:   &env,
+		DB:    db,
+		Log:   log,
+		Repos: repo.InitRepositories(db),
 	}
 }

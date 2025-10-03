@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS maintenance_schedules (
     downtime_minutes INTEGER,
     notes TEXT,
     maintenance_log TEXT,
-    before_images JSONB,
-    after_images JSONB,
+    before_images UUID[],
+    after_images UUID[],
     created_by UUID,
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP

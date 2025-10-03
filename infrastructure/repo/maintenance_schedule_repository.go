@@ -65,11 +65,11 @@ func (r *maintenanceScheduleRepository) List(ctx context.Context, pagination com
 	if len(filter.Priorities) > 0 {
 		q = q.Where("priority IN (?)", pg.In(filter.Priorities))
 	}
-	if filter.FromDate != nil && *filter.FromDate != "" {
-		q = q.Where("scheduled_date >= ?", *filter.FromDate)
+	if filter.FromDate != nil {
+		q = q.Where("scheduled_date >= ?", filter.FromDate)
 	}
-	if filter.ToDate != nil && *filter.ToDate != "" {
-		q = q.Where("scheduled_date <= ?", *filter.ToDate)
+	if filter.ToDate != nil {
+		q = q.Where("scheduled_date <= ?", filter.ToDate)
 	}
 
 	sortBy := "scheduled_date"
@@ -82,11 +82,10 @@ func (r *maintenanceScheduleRepository) List(ctx context.Context, pagination com
 	}
 	q = q.Order(fmt.Sprintf("%s %s", sortBy, sortDirection))
 
-	// Pagination
 	page := pagination.Page
 	limit := pagination.PageSize
 	if limit <= 0 || limit > 1000 {
-		limit = 50
+		limit = 10
 	}
 	if page <= 0 {
 		page = 1

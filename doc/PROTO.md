@@ -1,391 +1,351 @@
 syntax = "proto3";
 
-package harvest_record.v1;
+package maintenance_schedule.v1;
 
 import "google/protobuf/timestamp.proto";
 import "buf/validate/validate.proto";
 import "common/v1/common.proto";
 
-option go_package = "github.com/anhvanhoa/sf-proto/gen/harvest_record/v1;proto_harvest_record";
+option go_package = "github.com/anhvanhoa/sf-proto/gen/maintenance_schedule/v1;proto_maintenance_schedule";
 
-service HarvestRecordService {
-  rpc CreateHarvestRecord(CreateHarvestRecordRequest)
-      returns (CreateHarvestRecordResponse);
-  rpc GetHarvestRecord(GetHarvestRecordRequest)
-      returns (GetHarvestRecordResponse);
-  rpc UpdateHarvestRecord(UpdateHarvestRecordRequest)
-      returns (UpdateHarvestRecordResponse);
-  rpc DeleteHarvestRecord(DeleteHarvestRecordRequest)
-      returns (DeleteHarvestRecordResponse);
-  rpc ListHarvestRecords(ListHarvestRecordsRequest)
-      returns (ListHarvestRecordsResponse);
-  rpc GetHarvestRecordsByPlantingCycle(GetHarvestRecordsByPlantingCycleRequest)
-      returns (GetHarvestRecordsByPlantingCycleResponse);
-}
-
-message HarvestRecord {
-  string id = 1;
-  string planting_cycle_id = 2;
-  google.protobuf.Timestamp harvest_date = 3;
-  google.protobuf.Timestamp harvest_time = 4;
-  double quantity_kg = 5;
-  string quality_grade = 6;
-  string size_classification = 7;
-  double market_price_per_kg = 8;
-  double total_revenue = 9;
-  double labor_hours = 10;
-  double labor_cost = 11;
-  double packaging_cost = 12;
-  string storage_location = 13;
-  double storage_temperature = 14;
-  string buyer_information = 15;
-  google.protobuf.Timestamp delivery_date = 16;
-  string weather_at_harvest = 17;
-  int32 plant_health_rating = 18;
-  string notes = 19;
-  string images = 20;
-  string created_by = 21;
-  google.protobuf.Timestamp created_at = 22;
-  google.protobuf.Timestamp updated_at = 23;
-}
-
-message CreateHarvestRecordRequest {
-  string planting_cycle_id = 1 [ (buf.validate.field).string.min_len = 1 ];
-  google.protobuf.Timestamp harvest_date = 2;
-  google.protobuf.Timestamp harvest_time = 3;
-  double quantity_kg = 4 [ (buf.validate.field).double.gt = 0 ];
-  string quality_grade = 5 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 50
+message MaintenanceSchedule {
+  string id = 1 [ (buf.validate.field).string.uuid = true ];
+  string device_id = 2 [ (buf.validate.field).string.uuid = true ];
+  string maintenance_type = 3 [
+    (buf.validate.field).string.in = "cleaning",
+    (buf.validate.field).string.in = "calibration",
+    (buf.validate.field).string.in = "replacement",
+    (buf.validate.field).string.in = "repair",
+    (buf.validate.field).string.in = "inspection",
+    (buf.validate.field).string.in = "software_update"
   ];
-  string size_classification = 6 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 50
+  string maintenance_category = 4 [
+    (buf.validate.field).string.in = "preventive",
+    (buf.validate.field).string.in = "corrective",
+    (buf.validate.field).string.in = "emergency",
+    (buf.validate.field).string.in = "routine"
   ];
-  double market_price_per_kg = 7 [ (buf.validate.field).double.gte = 0 ];
-  double labor_hours = 8 [ (buf.validate.field).double.gte = 0 ];
-  double labor_cost = 9 [ (buf.validate.field).double.gte = 0 ];
-  double packaging_cost = 10 [ (buf.validate.field).double.gte = 0 ];
-  string storage_location = 11 [ (buf.validate.field).string.max_len = 200 ];
-  double storage_temperature = 12
-      [ (buf.validate.field).double.gte = -50, (buf.validate.field).double.lte = 50 ];
-  string buyer_information = 13 [ (buf.validate.field).string.max_len = 500 ];
-  google.protobuf.Timestamp delivery_date = 14;
-  string weather_at_harvest = 15 [ (buf.validate.field).string.max_len = 100 ];
-  int32 plant_health_rating = 16
-      [ (buf.validate.field).int32.gte = 1, (buf.validate.field).int32.lte = 10 ];
-  string notes = 17 [ (buf.validate.field).string.max_len = 1000 ];
-  string images = 18 [ (buf.validate.field).string.max_len = 2000 ];
-  string created_by = 19 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100
+  string priority = 5 [
+    (buf.validate.field).string.in = "low",
+    (buf.validate.field).string.in = "medium",
+    (buf.validate.field).string.in = "high",
+    (buf.validate.field).string.in = "critical"
+  ];
+  google.protobuf.Timestamp scheduled_date = 6;
+  double estimated_duration_hours = 7
+      [ (buf.validate.field).double = {gte : 0, lte : 168} ];
+  google.protobuf.Timestamp completed_date = 8;
+  double actual_duration_hours = 9
+      [ (buf.validate.field).double = {gte : 0, lte : 168} ];
+  string technician = 10 [ (buf.validate.field).string = {max_len : 100} ];
+  string technician_contact = 11
+      [ (buf.validate.field).string = {max_len : 100} ];
+  double cost = 12 [ (buf.validate.field).double = {gte : 0} ];
+  string parts_replaced = 13 [ (buf.validate.field).string = {max_len : 1000} ];
+  string tools_required = 14 [ (buf.validate.field).string = {max_len : 1000} ];
+  string safety_precautions = 15
+      [ (buf.validate.field).string = {max_len : 2000} ];
+  string pre_maintenance_readings = 16
+      [ (buf.validate.field).string = {max_len : 2000} ];
+  string post_maintenance_readings = 17
+      [ (buf.validate.field).string = {max_len : 2000} ];
+  string calibration_values = 18
+      [ (buf.validate.field).string = {max_len : 2000} ];
+  string test_results = 19 [ (buf.validate.field).string = {max_len : 2000} ];
+  string status = 20 [
+    (buf.validate.field).string.in = "scheduled",
+    (buf.validate.field).string.in = "in_progress",
+    (buf.validate.field).string.in = "completed",
+    (buf.validate.field).string.in = "cancelled",
+    (buf.validate.field).string.in = "postponed"
+  ];
+  int32 completion_rating = 21
+      [ (buf.validate.field).int32 = {gte : 1, lte : 5} ];
+  google.protobuf.Timestamp next_maintenance_date = 22;
+  int32 maintenance_interval_days = 23
+      [ (buf.validate.field).int32 = {gte : 1, lte : 3650} ];
+  bool warranty_impact = 24;
+  int32 downtime_minutes = 25
+      [ (buf.validate.field).int32 = {gte : 0, lte : 10080} ];
+  string notes = 26 [ (buf.validate.field).string = {max_len : 2000} ];
+  string maintenance_log = 27
+      [ (buf.validate.field).string = {max_len : 5000} ];
+  repeated string before_images = 28;
+  repeated string after_images = 29;
+  string created_by = 30
+      [ (buf.validate.field).string = {min_len : 1, max_len : 100} ];
+  google.protobuf.Timestamp created_at = 31;
+  google.protobuf.Timestamp updated_at = 32;
+}
+
+message MaintenanceScheduleFilter {
+  string device_id = 1 [ (buf.validate.field).string = {max_len : 50} ];
+  repeated string statuses = 2 [ (buf.validate.field).repeated = {
+    items : {
+      string : {
+        in : [
+          "scheduled",
+          "in_progress",
+          "completed",
+          "cancelled",
+          "postponed"
+        ]
+      }
+    }
+  } ];
+  repeated string types = 3 [ (buf.validate.field).repeated = {
+    items : {
+      string : {
+        in : [
+          "cleaning",
+          "calibration",
+          "replacement",
+          "repair",
+          "inspection",
+          "software_update"
+        ]
+      }
+    }
+  } ];
+  repeated string categories = 4 [ (buf.validate.field).repeated = {
+    items : {
+      string : {in : [ "preventive", "corrective", "emergency", "routine" ]}
+    }
+  } ];
+
+  repeated string priorities = 5 [ (buf.validate.field).repeated = {
+    items : {string : {in : [ "low", "medium", "high", "critical" ]}}
+  } ];
+
+  google.protobuf.Timestamp from_date = 6;
+  google.protobuf.Timestamp to_date = 7;
+}
+
+message CreateMaintenanceScheduleRequest {
+  string device_id = 1 [ (buf.validate.field).string.uuid = true ];
+  string maintenance_type = 2 [
+    (buf.validate.field).string.in = "cleaning",
+    (buf.validate.field).string.in = "calibration",
+    (buf.validate.field).string.in = "replacement",
+    (buf.validate.field).string.in = "repair",
+    (buf.validate.field).string.in = "inspection",
+    (buf.validate.field).string.in = "software_update"
+  ];
+  string maintenance_category = 3 [
+    (buf.validate.field).string.in = "preventive",
+    (buf.validate.field).string.in = "corrective",
+    (buf.validate.field).string.in = "emergency",
+    (buf.validate.field).string.in = "routine"
+  ];
+  string priority = 4 [
+    (buf.validate.field).string.in = "low",
+    (buf.validate.field).string.in = "medium",
+    (buf.validate.field).string.in = "high",
+    (buf.validate.field).string.in = "critical"
+  ];
+  google.protobuf.Timestamp scheduled_date = 5;
+  double estimated_duration_hours = 6
+      [ (buf.validate.field).double = {gte : 0, lte : 168} ];
+  google.protobuf.Timestamp completed_date = 7;
+  double actual_duration_hours = 8
+      [ (buf.validate.field).double = {gte : 0, lte : 168} ];
+  string technician = 9 [ (buf.validate.field).string = {max_len : 100} ];
+  string technician_contact = 10
+      [ (buf.validate.field).string = {max_len : 100} ];
+  double cost = 11 [ (buf.validate.field).double = {gte : 0} ];
+  string parts_replaced = 12 [ (buf.validate.field).string = {max_len : 1000} ];
+  string tools_required = 13 [ (buf.validate.field).string = {max_len : 1000} ];
+  string safety_precautions = 14
+      [ (buf.validate.field).string = {max_len : 2000} ];
+  string pre_maintenance_readings = 15
+      [ (buf.validate.field).string = {max_len : 2000} ];
+  string post_maintenance_readings = 16
+      [ (buf.validate.field).string = {max_len : 2000} ];
+  string calibration_values = 17
+      [ (buf.validate.field).string = {max_len : 2000} ];
+  string test_results = 18 [ (buf.validate.field).string = {max_len : 2000} ];
+  string status = 19 [
+    (buf.validate.field).string.in = "scheduled",
+    (buf.validate.field).string.in = "in_progress",
+    (buf.validate.field).string.in = "completed",
+    (buf.validate.field).string.in = "cancelled",
+    (buf.validate.field).string.in = "postponed"
+  ];
+  int32 completion_rating = 20
+      [ (buf.validate.field).int32 = {gte : 1, lte : 5} ];
+  google.protobuf.Timestamp next_maintenance_date = 21;
+  int32 maintenance_interval_days = 22
+      [ (buf.validate.field).int32 = {gte : 1, lte : 3650} ];
+  bool warranty_impact = 23;
+  int32 downtime_minutes = 24
+      [ (buf.validate.field).int32 = {gte : 0, lte : 10080} ];
+  string notes = 25 [ (buf.validate.field).string = {max_len : 2000} ];
+  string maintenance_log = 26
+      [ (buf.validate.field).string = {max_len : 5000} ];
+  repeated string before_images = 27;
+  repeated string after_images = 28;
+  string created_by = 29
+      [ (buf.validate.field).string = {min_len : 1, max_len : 100} ];
+}
+
+message CreateMaintenanceScheduleResponse {
+  MaintenanceSchedule maintenance_schedule = 1;
+}
+
+message GetMaintenanceScheduleRequest {
+  string id = 1 [ (buf.validate.field).string.uuid = true ];
+}
+
+message GetMaintenanceScheduleResponse {
+  MaintenanceSchedule maintenance_schedule = 1;
+}
+
+message UpdateMaintenanceScheduleRequest {
+  string id = 1 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string device_id = 2 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string maintenance_type = 3 [
+    (buf.validate.field).string.in = "cleaning",
+    (buf.validate.field).string.in = "calibration",
+    (buf.validate.field).string.in = "replacement",
+    (buf.validate.field).string.in = "repair",
+    (buf.validate.field).string.in = "inspection",
+    (buf.validate.field).string.in = "software_update",
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string maintenance_category = 4 [
+    (buf.validate.field).string.in = "preventive",
+    (buf.validate.field).string.in = "corrective",
+    (buf.validate.field).string.in = "emergency",
+    (buf.validate.field).string.in = "routine",
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string priority = 5 [
+    (buf.validate.field).string.in = "low",
+    (buf.validate.field).string.in = "medium",
+    (buf.validate.field).string.in = "high",
+    (buf.validate.field).string.in = "critical",
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  google.protobuf.Timestamp scheduled_date = 6;
+  double estimated_duration_hours = 7 [
+    (buf.validate.field).double = {gte : 0, lte : 168},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  google.protobuf.Timestamp completed_date = 8;
+  double actual_duration_hours = 9 [
+    (buf.validate.field).double = {gte : 0, lte : 168},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string technician = 10 [
+    (buf.validate.field).string = {max_len : 100},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string technician_contact = 11 [
+    (buf.validate.field).string = {max_len : 100},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  double cost = 12 [
+    (buf.validate.field).double = {gte : 0},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string parts_replaced = 13 [ (buf.validate.field).string = {max_len : 1000} ];
+  string tools_required = 14 [ (buf.validate.field).string = {max_len : 1000} ];
+  string safety_precautions = 15 [
+    (buf.validate.field).string = {max_len : 2000},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string pre_maintenance_readings = 16 [
+    (buf.validate.field).string = {max_len : 2000},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string post_maintenance_readings = 17 [
+    (buf.validate.field).string = {max_len : 2000},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string calibration_values = 18 [
+    (buf.validate.field).string = {max_len : 2000},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string test_results = 19 [
+    (buf.validate.field).string = {max_len : 2000},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string status = 20 [
+    (buf.validate.field).string.in = "scheduled",
+    (buf.validate.field).string.in = "in_progress",
+    (buf.validate.field).string.in = "completed",
+    (buf.validate.field).string.in = "cancelled",
+    (buf.validate.field).string.in = "postponed",
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  int32 completion_rating = 21 [
+    (buf.validate.field).int32 = {gte : 1, lte : 5},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  google.protobuf.Timestamp next_maintenance_date = 22;
+  int32 maintenance_interval_days = 23 [
+    (buf.validate.field).int32 = {gte : 1, lte : 3650},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  bool warranty_impact = 24;
+  int32 downtime_minutes = 25 [
+    (buf.validate.field).int32 = {gte : 0, lte : 10080},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string notes = 26 [
+    (buf.validate.field).string = {max_len : 2000},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  string maintenance_log = 27 [
+    (buf.validate.field).string = {max_len : 5000},
+    (buf.validate.field).ignore = IGNORE_ALWAYS
+  ];
+  repeated string before_images = 28;
+  repeated string after_images = 29;
+  string created_by = 30 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_ALWAYS
   ];
 }
 
-message CreateHarvestRecordResponse { HarvestRecord harvest_record = 1; }
-
-message GetHarvestRecordRequest {
-  string id = 1 [ (buf.validate.field).string.min_len = 1 ];
+message UpdateMaintenanceScheduleResponse {
+  MaintenanceSchedule maintenance_schedule = 1;
 }
 
-message GetHarvestRecordResponse { HarvestRecord harvest_record = 1; }
-
-message UpdateHarvestRecordRequest {
-  string id = 1 [ (buf.validate.field).string.min_len = 1 ];
-  google.protobuf.Timestamp harvest_date = 2;
-  google.protobuf.Timestamp harvest_time = 3;
-  double quantity_kg = 4 [ (buf.validate.field).double.gt = 0 ];
-  string quality_grade = 5 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 50
-  ];
-  string size_classification = 6 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 50
-  ];
-  double market_price_per_kg = 7 [ (buf.validate.field).double.gte = 0 ];
-  double labor_hours = 8 [ (buf.validate.field).double.gte = 0 ];
-  double labor_cost = 9 [ (buf.validate.field).double.gte = 0 ];
-  double packaging_cost = 10 [ (buf.validate.field).double.gte = 0 ];
-  string storage_location = 11 [ (buf.validate.field).string.max_len = 200 ];
-  double storage_temperature = 12
-      [ (buf.validate.field).double.gte = -50, (buf.validate.field).double.lte = 50 ];
-  string buyer_information = 13 [ (buf.validate.field).string.max_len = 500 ];
-  google.protobuf.Timestamp delivery_date = 14;
-  string weather_at_harvest = 15 [ (buf.validate.field).string.max_len = 100 ];
-  int32 plant_health_rating = 16
-      [ (buf.validate.field).int32.gte = 1, (buf.validate.field).int32.lte = 10 ];
-  string notes = 17 [ (buf.validate.field).string.max_len = 1000 ];
-  string images = 18 [ (buf.validate.field).string.max_len = 2000 ];
+message DeleteMaintenanceScheduleRequest {
+  string id = 1 [ (buf.validate.field).string.uuid = true ];
 }
 
-message UpdateHarvestRecordResponse { HarvestRecord harvest_record = 1; }
-
-message DeleteHarvestRecordRequest {
-  string id = 1 [ (buf.validate.field).string.min_len = 1 ];
+message DeleteMaintenanceScheduleResponse {
+  string message = 1;
+  bool success = 2;
 }
 
-message DeleteHarvestRecordResponse { string message = 1; }
-
-message ListHarvestRecordsRequest {
+message ListMaintenanceScheduleRequest {
   common.PaginationRequest pagination = 1;
-  HarvestRecordFilter filter = 2;
+  MaintenanceScheduleFilter filter = 2;
 }
 
-message ListHarvestRecordsResponse {
-  repeated HarvestRecord harvest_records = 1;
+message ListMaintenanceScheduleResponse {
+  repeated MaintenanceSchedule maintenance_schedules = 1;
   common.PaginationResponse pagination = 2;
 }
 
-message GetHarvestRecordsByPlantingCycleRequest {
-  string planting_cycle_id = 1 [ (buf.validate.field).string.min_len = 1 ];
-  common.PaginationRequest pagination = 2;
-  HarvestRecordFilter filter = 3;
-}
-
-message GetHarvestRecordsByPlantingCycleResponse {
-  repeated HarvestRecord harvest_records = 1;
-  int64 total = 2;
-}
-
-message HarvestRecordFilter {
-  google.protobuf.Timestamp harvest_date = 1;
-  string quality_grade = 2;
-  string size_classification = 3;
-  double market_price_per_kg = 4;
-  double total_revenue = 5;
-  int32 plant_health_rating = 6;
-  string notes = 7;
-  string images = 8;
-  string created_by = 9;
-  google.protobuf.Timestamp created_at = 10;
-}
-
-
--------------------------------------------
-
-
-syntax = "proto3";
-
-package production_service.pest_disease_record;
-
-import "google/protobuf/timestamp.proto";
-import "buf/validate/validate.proto";
-
-option go_package = "production_service/proto/pest_disease_record";
-
-service PestDiseaseRecordService {
-  rpc CreatePestDiseaseRecord(CreatePestDiseaseRecordRequest)
-      returns (CreatePestDiseaseRecordResponse);
-  rpc GetPestDiseaseRecord(GetPestDiseaseRecordRequest)
-      returns (GetPestDiseaseRecordResponse);
-  rpc UpdatePestDiseaseRecord(UpdatePestDiseaseRecordRequest)
-      returns (UpdatePestDiseaseRecordResponse);
-  rpc DeletePestDiseaseRecord(DeletePestDiseaseRecordRequest)
-      returns (DeletePestDiseaseRecordResponse);
-  rpc ListPestDiseaseRecords(ListPestDiseaseRecordsRequest)
-      returns (ListPestDiseaseRecordsResponse);
-  rpc GetPestDiseaseRecordsByPlantingCycle(
-      GetPestDiseaseRecordsByPlantingCycleRequest)
-      returns (GetPestDiseaseRecordsByPlantingCycleResponse);
-}
-
-message PestDiseaseRecord {
-  string id = 1;
-  string planting_cycle_id = 2;
-  string type = 3;
-  string name = 4;
-  string scientific_name = 5;
-  string severity = 6;
-  double affected_area_percentage = 7;
-  int32 affected_plant_count = 8;
-  google.protobuf.Timestamp detection_date = 9;
-  string detection_method = 10;
-  string symptoms = 11;
-  string treatment_applied = 12;
-  google.protobuf.Timestamp treatment_date = 13;
-  double treatment_cost = 14;
-  int32 treatment_duration_days = 15;
-  string recovery_status = 16;
-  int32 effectiveness_rating = 17;
-  google.protobuf.Timestamp follow_up_date = 18;
-  string prevention_measures = 19;
-  string environmental_factors = 20;
-  string images = 21;
-  string notes = 22;
-  string created_by = 23;
-  google.protobuf.Timestamp created_at = 24;
-  google.protobuf.Timestamp updated_at = 25;
-}
-
-message CreatePestDiseaseRecordRequest {
-  string planting_cycle_id = 1 [ (buf.validate.field).string.min_len = 1 ];
-  string type = 2 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 50
-  ];
-  string name = 3 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100
-  ];
-  string scientific_name = 4 [ (buf.validate.field).string.max_len = 200 ];
-  string severity = 5 [
-    (buf.validate.field).string.in = "low",
-    (buf.validate.field).string.in = "medium",
-    (buf.validate.field).string.in = "high",
-    (buf.validate.field).string.in = "critical"
-  ];
-  double affected_area_percentage = 6 [
-    (buf.validate.field).double.gte = 0,
-    (buf.validate.field).double.lte = 100
-  ];
-  int32 affected_plant_count = 7 [ (buf.validate.field).int32.gte = 0 ];
-  google.protobuf.Timestamp detection_date = 8;
-  string detection_method = 9 [ (buf.validate.field).string.max_len = 200 ];
-  string symptoms = 10 [ (buf.validate.field).string.max_len = 1000 ];
-  string treatment_applied = 11 [ (buf.validate.field).string.max_len = 1000 ];
-  google.protobuf.Timestamp treatment_date = 12;
-  double treatment_cost = 13 [ (buf.validate.field).double.gte = 0 ];
-  int32 treatment_duration_days = 14 [
-    (buf.validate.field).int32.gte = 0,
-    (buf.validate.field).int32.lte = 365
-  ];
-  string recovery_status = 15 [
-    (buf.validate.field).string.in = "recovered",
-    (buf.validate.field).string.in = "recovering",
-    (buf.validate.field).string.in = "not_recovered",
-    (buf.validate.field).string.in = "unknown"
-  ];
-  int32 effectiveness_rating = 16 [
-    (buf.validate.field).int32.gte = 1,
-    (buf.validate.field).int32.lte = 10
-  ];
-  google.protobuf.Timestamp follow_up_date = 17;
-  string prevention_measures = 18
-      [ (buf.validate.field).string.max_len = 1000 ];
-  string environmental_factors = 19
-      [ (buf.validate.field).string.max_len = 500 ];
-  string images = 20 [ (buf.validate.field).string.max_len = 2000 ];
-  string notes = 21 [ (buf.validate.field).string.max_len = 2000 ];
-  string created_by = 22 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100
-  ];
-}
-
-message CreatePestDiseaseRecordResponse {
-  PestDiseaseRecord pest_disease_record = 1;
-}
-
-message GetPestDiseaseRecordRequest {
-  string id = 1 [ (buf.validate.field).string.min_len = 1 ];
-}
-
-message GetPestDiseaseRecordResponse {
-  PestDiseaseRecord pest_disease_record = 1;
-}
-
-message UpdatePestDiseaseRecordRequest {
-  string id = 1 [ (buf.validate.field).string.min_len = 1 ];
-  string type = 2 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 50
-  ];
-  string name = 3 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100
-  ];
-  string scientific_name = 4 [ (buf.validate.field).string.max_len = 200 ];
-  string severity = 5 [
-    (buf.validate.field).string.in = "low",
-    (buf.validate.field).string.in = "medium",
-    (buf.validate.field).string.in = "high",
-    (buf.validate.field).string.in = "critical"
-  ];
-  double affected_area_percentage = 6 [
-    (buf.validate.field).double.gte = 0,
-    (buf.validate.field).double.lte = 100
-  ];
-  int32 affected_plant_count = 7 [ (buf.validate.field).int32.gte = 0 ];
-  google.protobuf.Timestamp detection_date = 8;
-  string detection_method = 9 [ (buf.validate.field).string.max_len = 200 ];
-  string symptoms = 10 [ (buf.validate.field).string.max_len = 1000 ];
-  string treatment_applied = 11 [ (buf.validate.field).string.max_len = 1000 ];
-  google.protobuf.Timestamp treatment_date = 12;
-  double treatment_cost = 13 [ (buf.validate.field).double.gte = 0 ];
-  int32 treatment_duration_days = 14 [
-    (buf.validate.field).int32.gte = 0,
-    (buf.validate.field).int32.lte = 365
-  ];
-  string recovery_status = 15 [
-    (buf.validate.field).string.in = "recovered",
-    (buf.validate.field).string.in = "recovering",
-    (buf.validate.field).string.in = "not_recovered",
-    (buf.validate.field).string.in = "unknown"
-  ];
-  int32 effectiveness_rating = 16 [
-    (buf.validate.field).int32.gte = 1,
-    (buf.validate.field).int32.lte = 10
-  ];
-  google.protobuf.Timestamp follow_up_date = 17;
-  string prevention_measures = 18
-      [ (buf.validate.field).string.max_len = 1000 ];
-  string environmental_factors = 19
-      [ (buf.validate.field).string.max_len = 500 ];
-  string images = 20 [ (buf.validate.field).string.max_len = 2000 ];
-  string notes = 21 [ (buf.validate.field).string.max_len = 2000 ];
-}
-
-message UpdatePestDiseaseRecordResponse {
-  PestDiseaseRecord pest_disease_record = 1;
-}
-
-message DeletePestDiseaseRecordRequest {
-  string id = 1 [ (buf.validate.field).string.min_len = 1 ];
-}
-
-message DeletePestDiseaseRecordResponse {
-  string message = 1;
-}
-
-message ListPestDiseaseRecordsRequest {
-  Pagination pagination = 1;
-  PestDiseaseRecordFilter filter = 2;
-}
-
-message ListPestDiseaseRecordsResponse {
-  repeated PestDiseaseRecord pest_disease_records = 1;
-  int64 total = 2;
-}
-
-message GetPestDiseaseRecordsByPlantingCycleRequest {
-  string planting_cycle_id = 1 [ (buf.validate.field).string.min_len = 1 ];
-  Pagination pagination = 2;
-  PestDiseaseRecordFilter filter = 3;
-}
-
-message GetPestDiseaseRecordsByPlantingCycleResponse {
-  repeated PestDiseaseRecord pest_disease_records = 1;
-  int64 total = 2;
-}
-
-message PestDiseaseRecordFilter {
-  google.protobuf.Timestamp detection_date = 1;
-  string detection_method = 2;
-  google.protobuf.Timestamp treatment_date = 3;
-  int32 treatment_duration_days = 4;
-  google.protobuf.Timestamp follow_up_date = 5;
-}
-
-message Pagination {
-  int32 page = 1 [ (buf.validate.field).int32.gte = 1 ];
-  int32 page_size = 2 [
-    (buf.validate.field).int32.gte = 1,
-    (buf.validate.field).int32.lte = 1000
-  ];
-  string sort_by = 3 [ (buf.validate.field).string.max_len = 50 ];
-  string sort_order = 4 [
-    (buf.validate.field).string.in = "asc",
-    (buf.validate.field).string.in = "desc"
-  ];
+service MaintenanceScheduleService {
+  rpc CreateMaintenanceSchedule(CreateMaintenanceScheduleRequest)
+      returns (CreateMaintenanceScheduleResponse);
+  rpc GetMaintenanceSchedule(GetMaintenanceScheduleRequest)
+      returns (GetMaintenanceScheduleResponse);
+  rpc UpdateMaintenanceSchedule(UpdateMaintenanceScheduleRequest)
+      returns (UpdateMaintenanceScheduleResponse);
+  rpc DeleteMaintenanceSchedule(DeleteMaintenanceScheduleRequest)
+      returns (DeleteMaintenanceScheduleResponse);
+  rpc ListMaintenanceSchedule(ListMaintenanceScheduleRequest)
+      returns (ListMaintenanceScheduleResponse);
 }

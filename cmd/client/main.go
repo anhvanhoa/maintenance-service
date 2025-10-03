@@ -11,8 +11,7 @@ import (
 	"time"
 
 	proto_common "github.com/anhvanhoa/sf-proto/gen/common/v1"
-	proto_harvest_record "github.com/anhvanhoa/sf-proto/gen/harvest_record/v1"
-	proto_pest_disease_record "github.com/anhvanhoa/sf-proto/gen/pest_disease_record/v1"
+	proto_maintenance_schedule "github.com/anhvanhoa/sf-proto/gen/maintenance_schedule/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -51,26 +50,24 @@ func inputPaging(reader *bufio.Reader) (int32, int32) {
 	return offset, limit
 }
 
-type CropServiceClient struct {
-	harvestRecordClient     proto_harvest_record.HarvestRecordServiceClient
-	pestDiseaseRecordClient proto_pest_disease_record.PestDiseaseRecordServiceClient
-	conn                    *grpc.ClientConn
+type MaintenanceServiceClient struct {
+	maintenanceScheduleClient proto_maintenance_schedule.MaintenanceScheduleServiceClient
+	conn                      *grpc.ClientConn
 }
 
-func NewCropServiceClient(address string) (*CropServiceClient, error) {
+func NewMaintenanceServiceClient(address string) (*MaintenanceServiceClient, error) {
 	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to gRPC server: %v", err)
 	}
 
-	return &CropServiceClient{
-		harvestRecordClient:     proto_harvest_record.NewHarvestRecordServiceClient(conn),
-		pestDiseaseRecordClient: proto_pest_disease_record.NewPestDiseaseRecordServiceClient(conn),
-		conn:                    conn,
+	return &MaintenanceServiceClient{
+		maintenanceScheduleClient: proto_maintenance_schedule.NewMaintenanceScheduleServiceClient(conn),
+		conn:                      conn,
 	}, nil
 }
 
-func (c *CropServiceClient) Close() {
+func (c *MaintenanceServiceClient) Close() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
@@ -81,413 +78,87 @@ func cleanInput(s string) string {
 	return strings.ToValidUTF8(strings.TrimSpace(s), "")
 }
 
-// ================== Harvest Record Service Tests ==================
+// ================== Maintenance Schedule Service Tests ==================
 
-func (c *CropServiceClient) TestCreateHarvestRecord() {
-	fmt.Println("\n=== Kiểm thử Tạo bản ghi Thu hoạch ===")
-
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Nhập ID chu kỳ trồng: ")
-	plantingCycleId, _ := reader.ReadString('\n')
-	plantingCycleId = cleanInput(plantingCycleId)
-
-	fmt.Print("Nhập ngày thu hoạch (YYYY-MM-DD): ")
-	harvestDateStr, _ := reader.ReadString('\n')
-	harvestDateStr = cleanInput(harvestDateStr)
-	var harvestDate *timestamppb.Timestamp
-	if harvestDateStr != "" {
-		if t, err := time.Parse("2006-01-02", harvestDateStr); err == nil {
-			harvestDate = timestamppb.New(t)
-		}
-	}
-
-	fmt.Print("Nhập khối lượng (kg): ")
-	quantityStr, _ := reader.ReadString('\n')
-	quantityStr = cleanInput(quantityStr)
-	quantity := float64(100.0)
-	if quantityStr != "" {
-		if q, err := strconv.ParseFloat(quantityStr, 64); err == nil {
-			quantity = q
-		}
-	}
-
-	fmt.Print("Nhập hạng chất lượng: ")
-	qualityGrade, _ := reader.ReadString('\n')
-	qualityGrade = cleanInput(qualityGrade)
-
-	fmt.Print("Nhập phân loại kích cỡ: ")
-	sizeClassification, _ := reader.ReadString('\n')
-	sizeClassification = cleanInput(sizeClassification)
-
-	fmt.Print("Nhập giá thị trường mỗi kg: ")
-	priceStr, _ := reader.ReadString('\n')
-	priceStr = cleanInput(priceStr)
-	price := float64(10.0)
-	if priceStr != "" {
-		if p, err := strconv.ParseFloat(priceStr, 64); err == nil {
-			price = p
-		}
-	}
-
-	fmt.Print("Nhập số giờ lao động: ")
-	laborHoursStr, _ := reader.ReadString('\n')
-	laborHoursStr = cleanInput(laborHoursStr)
-	laborHours := float64(8.0)
-	if laborHoursStr != "" {
-		if h, err := strconv.ParseFloat(laborHoursStr, 64); err == nil {
-			laborHours = h
-		}
-	}
-
-	fmt.Print("Nhập chi phí lao động: ")
-	laborCostStr, _ := reader.ReadString('\n')
-	laborCostStr = cleanInput(laborCostStr)
-	laborCost := float64(50.0)
-	if laborCostStr != "" {
-		if c, err := strconv.ParseFloat(laborCostStr, 64); err == nil {
-			laborCost = c
-		}
-	}
-
-	fmt.Print("Nhập chi phí đóng gói: ")
-	packagingCostStr, _ := reader.ReadString('\n')
-	packagingCostStr = cleanInput(packagingCostStr)
-	packagingCost := float64(10.0)
-	if packagingCostStr != "" {
-		if c, err := strconv.ParseFloat(packagingCostStr, 64); err == nil {
-			packagingCost = c
-		}
-	}
-
-	fmt.Print("Nhập địa điểm lưu trữ: ")
-	storageLocation, _ := reader.ReadString('\n')
-	storageLocation = cleanInput(storageLocation)
-
-	fmt.Print("Nhập nhiệt độ lưu trữ: ")
-	tempStr, _ := reader.ReadString('\n')
-	tempStr = cleanInput(tempStr)
-	temperature := float64(4.0)
-	if tempStr != "" {
-		if t, err := strconv.ParseFloat(tempStr, 64); err == nil {
-			temperature = t
-		}
-	}
-
-	fmt.Print("Nhập thông tin người mua: ")
-	buyerInfo, _ := reader.ReadString('\n')
-	buyerInfo = cleanInput(buyerInfo)
-
-	fmt.Print("Nhập thời tiết lúc thu hoạch: ")
-	weather, _ := reader.ReadString('\n')
-	weather = cleanInput(weather)
-
-	fmt.Print("Nhập đánh giá sức khỏe cây (1-5): ")
-	ratingStr, _ := reader.ReadString('\n')
-	ratingStr = cleanInput(ratingStr)
-	rating := int32(5)
-	if ratingStr != "" {
-		if r, err := strconv.Atoi(ratingStr); err == nil {
-			rating = int32(r)
-		}
-	}
-
-	fmt.Print("Nhập ghi chú: ")
-	notes, _ := reader.ReadString('\n')
-	notes = cleanInput(notes)
-
-	fmt.Print("Nhập hình ảnh VD: [id1, id2, id3]: ")
-	images, _ := reader.ReadString('\n')
-	images = cleanInput(images)
-
-	fmt.Print("Nhập người tạo: ")
-	createdBy, _ := reader.ReadString('\n')
-	createdBy = cleanInput(createdBy)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := c.harvestRecordClient.CreateHarvestRecord(ctx, &proto_harvest_record.CreateHarvestRecordRequest{
-		PlantingCycleId:    plantingCycleId,
-		HarvestDate:        harvestDate,
-		QuantityKg:         quantity,
-		QualityGrade:       qualityGrade,
-		SizeClassification: sizeClassification,
-		MarketPricePerKg:   price,
-		LaborHours:         laborHours,
-		LaborCost:          laborCost,
-		PackagingCost:      packagingCost,
-		StorageLocation:    storageLocation,
-		StorageTemperature: temperature,
-		BuyerInformation:   buyerInfo,
-		WeatherAtHarvest:   weather,
-		PlantHealthRating:  rating,
-		Notes:              notes,
-		Images:             images,
-		CreatedBy:          createdBy,
-	})
-	if err != nil {
-		fmt.Printf("Error calling CreateHarvestRecord: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Kết quả tạo bản ghi thu hoạch:\n")
-	if resp.HarvestRecord != nil {
-		fmt.Printf("ID: %s\n", resp.HarvestRecord.Id)
-		fmt.Printf("Planting Cycle ID: %s\n", resp.HarvestRecord.PlantingCycleId)
-		fmt.Printf("Quantity: %.2f kg\n", resp.HarvestRecord.QuantityKg)
-		fmt.Printf("Quality Grade: %s\n", resp.HarvestRecord.QualityGrade)
-		fmt.Printf("Size Classification: %s\n", resp.HarvestRecord.SizeClassification)
-		fmt.Printf("Market Price: %.2f per kg\n", resp.HarvestRecord.MarketPricePerKg)
-		fmt.Printf("Total Revenue: %.2f\n", resp.HarvestRecord.TotalRevenue)
-	}
-}
-
-func (c *CropServiceClient) TestGetHarvestRecord() {
-	fmt.Println("\n=== Kiểm thử Lấy bản ghi Thu hoạch ===")
+func (c *MaintenanceServiceClient) TestCreateMaintenanceSchedule() {
+	fmt.Println("\n=== Kiểm thử Tạo lịch bảo trì ===")
 
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Nhập ID bản ghi thu hoạch: ")
-	id, _ := reader.ReadString('\n')
-	id = cleanInput(id)
+	fmt.Print("Nhập ID thiết bị (UUID): ")
+	deviceId, _ := reader.ReadString('\n')
+	deviceId = cleanInput(deviceId)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := c.harvestRecordClient.GetHarvestRecord(ctx, &proto_harvest_record.GetHarvestRecordRequest{
-		Id: id,
-	})
-	if err != nil {
-		fmt.Printf("Error calling GetHarvestRecord: %v\n", err)
-		return
+	fmt.Print("Nhập loại bảo trì (cleaning/calibration/replacement/repair/inspection/software_update): ")
+	maintenanceType, _ := reader.ReadString('\n')
+	maintenanceType = cleanInput(maintenanceType)
+	if maintenanceType == "" {
+		maintenanceType = "cleaning" // Default value
 	}
 
-	fmt.Printf("Kết quả lấy bản ghi thu hoạch:\n")
-	if resp.HarvestRecord != nil {
-		fmt.Printf("ID: %s\n", resp.HarvestRecord.Id)
-		fmt.Printf("Planting Cycle ID: %s\n", resp.HarvestRecord.PlantingCycleId)
-		fmt.Printf("Khối lượng: %.2f kg\n", resp.HarvestRecord.QuantityKg)
-		fmt.Printf("Hạng chất lượng: %s\n", resp.HarvestRecord.QualityGrade)
-		fmt.Printf("Phân loại kích cỡ: %s\n", resp.HarvestRecord.SizeClassification)
-		fmt.Printf("Giá thị trường: %.2f mỗi kg\n", resp.HarvestRecord.MarketPricePerKg)
-		fmt.Printf("Tổng doanh thu: %.2f\n", resp.HarvestRecord.TotalRevenue)
-		fmt.Printf("Số giờ lao động: %.2f\n", resp.HarvestRecord.LaborHours)
-		fmt.Printf("Chi phí lao động: %.2f\n", resp.HarvestRecord.LaborCost)
-		fmt.Printf("Chi phí đóng gói: %.2f\n", resp.HarvestRecord.PackagingCost)
-		fmt.Printf("Địa điểm lưu trữ: %s\n", resp.HarvestRecord.StorageLocation)
-		fmt.Printf("Nhiệt độ lưu trữ: %.2f°C\n", resp.HarvestRecord.StorageTemperature)
-		fmt.Printf("Thông tin người mua: %s\n", resp.HarvestRecord.BuyerInformation)
-		fmt.Printf("Thời tiết lúc thu hoạch: %s\n", resp.HarvestRecord.WeatherAtHarvest)
-		fmt.Printf("Đánh giá sức khỏe cây: %d\n", resp.HarvestRecord.PlantHealthRating)
-		fmt.Printf("Ghi chú: %s\n", resp.HarvestRecord.Notes)
-		fmt.Printf("Người tạo: %s\n", resp.HarvestRecord.CreatedBy)
-	}
-}
-
-func (c *CropServiceClient) TestListHarvestRecords() {
-	fmt.Println("\n=== Kiểm thử Liệt kê Bản ghi Thu hoạch ===")
-
-	reader := bufio.NewReader(os.Stdin)
-
-	offset, limit := inputPaging(reader)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := c.harvestRecordClient.ListHarvestRecords(ctx, &proto_harvest_record.ListHarvestRecordsRequest{
-		Pagination: &proto_common.PaginationRequest{
-			Page:      offset,
-			PageSize:  limit,
-			SortBy:    "created_at",
-			SortOrder: "desc",
-		},
-	})
-	if err != nil {
-		fmt.Printf("Error calling ListHarvestRecords: %v\n", err)
-		return
+	fmt.Print("Nhập danh mục bảo trì (preventive/corrective/emergency/routine): ")
+	maintenanceCategory, _ := reader.ReadString('\n')
+	maintenanceCategory = cleanInput(maintenanceCategory)
+	if maintenanceCategory == "" {
+		maintenanceCategory = "preventive" // Default value
 	}
 
-	fmt.Printf("Kết quả liệt kê bản ghi thu hoạch:\n")
-	fmt.Printf("Tổng số: %d\n", resp.Pagination.Total)
-	fmt.Printf("Danh sách bản ghi thu hoạch:\n")
-	for i, record := range resp.HarvestRecords {
-		fmt.Printf("  [%d] ID: %s, Chu kỳ trồng: %s, Khối lượng: %.2f kg, Chất lượng: %s\n",
-			i+1, record.Id, record.PlantingCycleId, record.QuantityKg, record.QualityGrade)
-	}
-}
-
-func (c *CropServiceClient) TestGetHarvestRecordsByPlantingCycle() {
-	fmt.Println("\n=== Kiểm thử Lấy Bản ghi Thu hoạch theo Chu kỳ trồng ===")
-
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Nhập ID chu kỳ trồng: ")
-	plantingCycleId, _ := reader.ReadString('\n')
-	plantingCycleId = cleanInput(plantingCycleId)
-
-	offset, limit := inputPaging(reader)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := c.harvestRecordClient.GetHarvestRecordsByPlantingCycle(ctx, &proto_harvest_record.GetHarvestRecordsByPlantingCycleRequest{
-		PlantingCycleId: plantingCycleId,
-		Pagination: &proto_common.PaginationRequest{
-			Page:      offset,
-			PageSize:  limit,
-			SortBy:    "harvest_date",
-			SortOrder: "desc",
-		},
-	})
-	if err != nil {
-		fmt.Printf("Error calling GetHarvestRecordsByPlantingCycle: %v\n", err)
-		return
+	fmt.Print("Nhập mức độ ưu tiên (low/medium/high/critical): ")
+	priority, _ := reader.ReadString('\n')
+	priority = cleanInput(priority)
+	if priority == "" {
+		priority = "medium" // Default value
 	}
 
-	fmt.Printf("Kết quả lấy bản ghi thu hoạch theo chu kỳ trồng:\n")
-	fmt.Printf("Tổng số: %d\n", resp.Total)
-	fmt.Printf("Danh sách bản ghi thu hoạch:\n")
-	for i, record := range resp.HarvestRecords {
-		fmt.Printf("  [%d] ID: %s, Khối lượng: %.2f kg, Chất lượng: %s, Doanh thu: %.2f\n",
-			i+1, record.Id, record.QuantityKg, record.QualityGrade, record.TotalRevenue)
-	}
-}
-
-// ================== Pest Disease Record Service Tests ==================
-
-func (c *CropServiceClient) TestCreatePestDiseaseRecord() {
-	fmt.Println("\n=== Kiểm thử Tạo Bản ghi Sâu bệnh ===")
-
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Nhập ID chu kỳ trồng: ")
-	plantingCycleId, _ := reader.ReadString('\n')
-	plantingCycleId = cleanInput(plantingCycleId)
-
-	fmt.Print("Nhập loại (pest/disease/nutrient_deficiency/environmental_stress): ")
-	recordType, _ := reader.ReadString('\n')
-	recordType = cleanInput(recordType)
-
-	fmt.Print("Nhập tên: ")
-	name, _ := reader.ReadString('\n')
-	name = cleanInput(name)
-
-	fmt.Print("Nhập tên khoa học: ")
-	scientificName, _ := reader.ReadString('\n')
-	scientificName = cleanInput(scientificName)
-
-	fmt.Print("Nhập mức độ (low/medium/high/critical): ")
-	severity, _ := reader.ReadString('\n')
-	severity = cleanInput(severity)
-
-	fmt.Print("Nhập tỷ lệ diện tích bị ảnh hưởng (%): ")
-	areaStr, _ := reader.ReadString('\n')
-	areaStr = cleanInput(areaStr)
-	area := float64(10.0)
-	if areaStr != "" {
-		if a, err := strconv.ParseFloat(areaStr, 64); err == nil {
-			area = a
+	fmt.Print("Nhập ngày lên lịch (YYYY-MM-DD): ")
+	scheduledDateStr, _ := reader.ReadString('\n')
+	scheduledDateStr = cleanInput(scheduledDateStr)
+	var scheduledDate *timestamppb.Timestamp
+	if scheduledDateStr != "" {
+		if t, err := time.Parse("2006-01-02", scheduledDateStr); err == nil {
+			scheduledDate = timestamppb.New(t)
 		}
 	}
 
-	fmt.Print("Nhập số lượng cây bị ảnh hưởng: ")
-	countStr, _ := reader.ReadString('\n')
-	countStr = cleanInput(countStr)
-	count := int32(10)
-	if countStr != "" {
-		if c, err := strconv.Atoi(countStr); err == nil {
-			count = int32(c)
+	fmt.Print("Nhập thời gian ước tính (giờ): ")
+	durationStr, _ := reader.ReadString('\n')
+	durationStr = cleanInput(durationStr)
+	duration := float64(2.0)
+	if durationStr != "" {
+		if d, err := strconv.ParseFloat(durationStr, 64); err == nil {
+			duration = d
 		}
 	}
 
-	fmt.Print("Nhập ngày phát hiện (YYYY-MM-DD): ")
-	detectionDateStr, _ := reader.ReadString('\n')
-	detectionDateStr = cleanInput(detectionDateStr)
-	var detectionDate *timestamppb.Timestamp
-	if detectionDateStr != "" {
-		if t, err := time.Parse("2006-01-02", detectionDateStr); err == nil {
-			detectionDate = timestamppb.New(t)
-		}
-	}
+	fmt.Print("Nhập tên kỹ thuật viên: ")
+	technician, _ := reader.ReadString('\n')
+	technician = cleanInput(technician)
 
-	fmt.Print("Nhập phương pháp phát hiện: ")
-	detectionMethod, _ := reader.ReadString('\n')
-	detectionMethod = cleanInput(detectionMethod)
+	fmt.Print("Nhập liên hệ kỹ thuật viên: ")
+	technicianContact, _ := reader.ReadString('\n')
+	technicianContact = cleanInput(technicianContact)
 
-	fmt.Print("Nhập triệu chứng: ")
-	symptoms, _ := reader.ReadString('\n')
-	symptoms = cleanInput(symptoms)
-
-	fmt.Print("Nhập biện pháp điều trị đã áp dụng: ")
-	treatment, _ := reader.ReadString('\n')
-	treatment = cleanInput(treatment)
-
-	fmt.Print("Nhập ngày điều trị (YYYY-MM-DD): ")
-	treatmentDateStr, _ := reader.ReadString('\n')
-	treatmentDateStr = cleanInput(treatmentDateStr)
-	var treatmentDate *timestamppb.Timestamp
-	if treatmentDateStr != "" {
-		if t, err := time.Parse("2006-01-02", treatmentDateStr); err == nil {
-			treatmentDate = timestamppb.New(t)
-		}
-	}
-
-	fmt.Print("Nhập chi phí điều trị: ")
+	fmt.Print("Nhập chi phí: ")
 	costStr, _ := reader.ReadString('\n')
 	costStr = cleanInput(costStr)
-	cost := float64(50.0)
+	cost := float64(100.0)
 	if costStr != "" {
 		if c, err := strconv.ParseFloat(costStr, 64); err == nil {
 			cost = c
 		}
 	}
 
-	fmt.Print("Nhập thời gian điều trị (ngày): ")
-	durationStr, _ := reader.ReadString('\n')
-	durationStr = cleanInput(durationStr)
-	duration := int32(7)
-	if durationStr != "" {
-		if d, err := strconv.Atoi(durationStr); err == nil {
-			duration = int32(d)
-		}
-	}
+	fmt.Print("Nhập linh kiện thay thế: ")
+	partsReplaced, _ := reader.ReadString('\n')
+	partsReplaced = cleanInput(partsReplaced)
 
-	fmt.Print("Nhập trạng thái phục hồi: ")
-	recoveryStatus, _ := reader.ReadString('\n')
-	recoveryStatus = cleanInput(recoveryStatus)
+	fmt.Print("Nhập dụng cụ cần thiết: ")
+	toolsRequired, _ := reader.ReadString('\n')
+	toolsRequired = cleanInput(toolsRequired)
 
-	fmt.Print("Nhập đánh giá hiệu quả (1-5): ")
-	ratingStr, _ := reader.ReadString('\n')
-	ratingStr = cleanInput(ratingStr)
-	rating := int32(4)
-	if ratingStr != "" {
-		if r, err := strconv.Atoi(ratingStr); err == nil {
-			rating = int32(r)
-		}
-	}
-
-	fmt.Print("Nhập ngày theo dõi (YYYY-MM-DD): ")
-	followUpDateStr, _ := reader.ReadString('\n')
-	followUpDateStr = cleanInput(followUpDateStr)
-	var followUpDate *timestamppb.Timestamp
-	if followUpDateStr != "" {
-		if t, err := time.Parse("2006-01-02", followUpDateStr); err == nil {
-			followUpDate = timestamppb.New(t)
-		}
-	}
-
-	fmt.Print("Nhập biện pháp phòng ngừa: ")
-	prevention, _ := reader.ReadString('\n')
-	prevention = cleanInput(prevention)
-
-	fmt.Print("Nhập yếu tố môi trường: ")
-	environmental, _ := reader.ReadString('\n')
-	environmental = cleanInput(environmental)
-
-	fmt.Print("Nhập hình ảnh: ")
-	images, _ := reader.ReadString('\n')
-	images = cleanInput(images)
+	fmt.Print("Nhập biện pháp an toàn: ")
+	safetyPrecautions, _ := reader.ReadString('\n')
+	safetyPrecautions = cleanInput(safetyPrecautions)
 
 	fmt.Print("Nhập ghi chú: ")
 	notes, _ := reader.ReadString('\n')
@@ -497,195 +168,586 @@ func (c *CropServiceClient) TestCreatePestDiseaseRecord() {
 	createdBy, _ := reader.ReadString('\n')
 	createdBy = cleanInput(createdBy)
 
+	// Additional required fields
+	fmt.Print("Nhập trạng thái (scheduled/in_progress/completed/cancelled/postponed): ")
+	status, _ := reader.ReadString('\n')
+	status = cleanInput(status)
+	if status == "" {
+		status = "scheduled" // Default value
+	}
+
+	fmt.Print("Nhập đánh giá hoàn thành (1-5): ")
+	ratingStr, _ := reader.ReadString('\n')
+	ratingStr = cleanInput(ratingStr)
+	rating := int32(1) // Default value
+	if ratingStr != "" {
+		if r, err := strconv.Atoi(ratingStr); err == nil && r >= 1 && r <= 5 {
+			rating = int32(r)
+		}
+	}
+
+	fmt.Print("Nhập khoảng cách bảo trì (ngày, 1-3650): ")
+	intervalStr, _ := reader.ReadString('\n')
+	intervalStr = cleanInput(intervalStr)
+	interval := int32(30) // Default value
+	if intervalStr != "" {
+		if i, err := strconv.Atoi(intervalStr); err == nil && i >= 1 && i <= 3650 {
+			interval = int32(i)
+		}
+	}
+
+	fmt.Print("Ảnh hưởng bảo hành (true/false): ")
+	warrantyImpactStr, _ := reader.ReadString('\n')
+	warrantyImpactStr = cleanInput(warrantyImpactStr)
+	warrantyImpact := false
+	if warrantyImpactStr == "true" {
+		warrantyImpact = true
+	}
+
+	fmt.Print("Nhập thời gian ngừng hoạt động (phút, 0-10080): ")
+	downtimeStr, _ := reader.ReadString('\n')
+	downtimeStr = cleanInput(downtimeStr)
+	downtime := int32(0) // Default value
+	if downtimeStr != "" {
+		if d, err := strconv.Atoi(downtimeStr); err == nil && d >= 0 && d <= 10080 {
+			downtime = int32(d)
+		}
+	}
+
+	fmt.Print("Nhập nhật ký bảo trì: ")
+	maintenanceLog, _ := reader.ReadString('\n')
+	maintenanceLog = cleanInput(maintenanceLog)
+
+	fmt.Print("Nhập hình ảnh trước: ")
+	beforeImages, _ := reader.ReadString('\n')
+	beforeImages = cleanInput(beforeImages)
+
+	fmt.Print("Nhập hình ảnh sau: ")
+	afterImages, _ := reader.ReadString('\n')
+	afterImages = cleanInput(afterImages)
+
+	// Convert image strings to slices
+	var beforeImagesSlice []string
+	if beforeImages != "" {
+		beforeImagesSlice = []string{beforeImages}
+	}
+	var afterImagesSlice []string
+	if afterImages != "" {
+		afterImagesSlice = []string{afterImages}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resp, err := c.pestDiseaseRecordClient.CreatePestDiseaseRecord(ctx, &proto_pest_disease_record.CreatePestDiseaseRecordRequest{
-		PlantingCycleId:        plantingCycleId,
-		Type:                   recordType,
-		Name:                   name,
-		ScientificName:         scientificName,
-		Severity:               severity,
-		AffectedAreaPercentage: area,
-		AffectedPlantCount:     count,
-		DetectionDate:          detectionDate,
-		DetectionMethod:        detectionMethod,
-		Symptoms:               symptoms,
-		TreatmentApplied:       treatment,
-		TreatmentDate:          treatmentDate,
-		TreatmentCost:          cost,
-		TreatmentDurationDays:  duration,
-		RecoveryStatus:         recoveryStatus,
-		EffectivenessRating:    rating,
-		FollowUpDate:           followUpDate,
-		PreventionMeasures:     prevention,
-		EnvironmentalFactors:   environmental,
-		Images:                 images,
-		Notes:                  notes,
-		CreatedBy:              createdBy,
+	resp, err := c.maintenanceScheduleClient.CreateMaintenanceSchedule(ctx, &proto_maintenance_schedule.CreateMaintenanceScheduleRequest{
+		DeviceId:                deviceId,
+		MaintenanceType:         maintenanceType,
+		MaintenanceCategory:     maintenanceCategory,
+		Priority:                priority,
+		ScheduledDate:           scheduledDate,
+		EstimatedDurationHours:  duration,
+		Technician:              technician,
+		TechnicianContact:       technicianContact,
+		Cost:                    cost,
+		PartsReplaced:           partsReplaced,
+		ToolsRequired:           toolsRequired,
+		SafetyPrecautions:       safetyPrecautions,
+		Status:                  status,
+		CompletionRating:        rating,
+		MaintenanceIntervalDays: interval,
+		WarrantyImpact:          warrantyImpact,
+		DowntimeMinutes:         downtime,
+		Notes:                   notes,
+		MaintenanceLog:          maintenanceLog,
+		BeforeImages:            beforeImagesSlice,
+		AfterImages:             afterImagesSlice,
+		CreatedBy:               createdBy,
 	})
 	if err != nil {
-		fmt.Printf("Error calling CreatePestDiseaseRecord: %v\n", err)
+		fmt.Printf("Error calling CreateMaintenanceSchedule: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Kết quả tạo bản ghi sâu bệnh:\n")
-	if resp.PestDiseaseRecord != nil {
-		fmt.Printf("ID: %s\n", resp.PestDiseaseRecord.Id)
-		fmt.Printf("Planting Cycle ID: %s\n", resp.PestDiseaseRecord.PlantingCycleId)
-		fmt.Printf("Type: %s\n", resp.PestDiseaseRecord.Type)
-		fmt.Printf("Name: %s\n", resp.PestDiseaseRecord.Name)
-		fmt.Printf("Scientific Name: %s\n", resp.PestDiseaseRecord.ScientificName)
-		fmt.Printf("Severity: %s\n", resp.PestDiseaseRecord.Severity)
-		fmt.Printf("Affected Area: %.2f%%\n", resp.PestDiseaseRecord.AffectedAreaPercentage)
-		fmt.Printf("Affected Plants: %d\n", resp.PestDiseaseRecord.AffectedPlantCount)
-		fmt.Printf("Detection Method: %s\n", resp.PestDiseaseRecord.DetectionMethod)
-		fmt.Printf("Treatment Applied: %s\n", resp.PestDiseaseRecord.TreatmentApplied)
-		fmt.Printf("Treatment Cost: %.2f\n", resp.PestDiseaseRecord.TreatmentCost)
-		fmt.Printf("Recovery Status: %s\n", resp.PestDiseaseRecord.RecoveryStatus)
-		fmt.Printf("Effectiveness Rating: %d\n", resp.PestDiseaseRecord.EffectivenessRating)
+	fmt.Printf("Kết quả tạo lịch bảo trì:\n")
+	if resp.MaintenanceSchedule != nil {
+		fmt.Printf("ID: %s\n", resp.MaintenanceSchedule.Id)
+		fmt.Printf("Device ID: %s\n", resp.MaintenanceSchedule.DeviceId)
+		fmt.Printf("Maintenance Type: %s\n", resp.MaintenanceSchedule.MaintenanceType)
+		fmt.Printf("Maintenance Category: %s\n", resp.MaintenanceSchedule.MaintenanceCategory)
+		fmt.Printf("Priority: %s\n", resp.MaintenanceSchedule.Priority)
+		fmt.Printf("Status: %s\n", resp.MaintenanceSchedule.Status)
+		fmt.Printf("Estimated Duration: %.2f hours\n", resp.MaintenanceSchedule.EstimatedDurationHours)
+		fmt.Printf("Technician: %s\n", resp.MaintenanceSchedule.Technician)
+		fmt.Printf("Cost: %.2f\n", resp.MaintenanceSchedule.Cost)
+		fmt.Printf("Completion Rating: %d\n", resp.MaintenanceSchedule.CompletionRating)
+		fmt.Printf("Maintenance Interval: %d days\n", resp.MaintenanceSchedule.MaintenanceIntervalDays)
+		fmt.Printf("Warranty Impact: %t\n", resp.MaintenanceSchedule.WarrantyImpact)
+		fmt.Printf("Downtime: %d minutes\n", resp.MaintenanceSchedule.DowntimeMinutes)
+		fmt.Printf("Created By: %s\n", resp.MaintenanceSchedule.CreatedBy)
 	}
 }
 
-func (c *CropServiceClient) TestGetPestDiseaseRecord() {
-	fmt.Println("\n=== Kiểm thử Lấy Bản ghi Sâu bệnh ===")
+func (c *MaintenanceServiceClient) TestGetMaintenanceSchedule() {
+	fmt.Println("\n=== Kiểm thử Lấy lịch bảo trì ===")
 
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Nhập ID bản ghi sâu bệnh: ")
+	fmt.Print("Nhập ID lịch bảo trì: ")
 	id, _ := reader.ReadString('\n')
 	id = cleanInput(id)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resp, err := c.pestDiseaseRecordClient.GetPestDiseaseRecord(ctx, &proto_pest_disease_record.GetPestDiseaseRecordRequest{
+	resp, err := c.maintenanceScheduleClient.GetMaintenanceSchedule(ctx, &proto_maintenance_schedule.GetMaintenanceScheduleRequest{
 		Id: id,
 	})
 	if err != nil {
-		fmt.Printf("Error calling GetPestDiseaseRecord: %v\n", err)
+		fmt.Printf("Error calling GetMaintenanceSchedule: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Kết quả lấy bản ghi sâu bệnh:\n")
-	if resp.PestDiseaseRecord != nil {
-		fmt.Printf("ID: %s\n", resp.PestDiseaseRecord.Id)
-		fmt.Printf("Planting Cycle ID: %s\n", resp.PestDiseaseRecord.PlantingCycleId)
-		fmt.Printf("Loại: %s\n", resp.PestDiseaseRecord.Type)
-		fmt.Printf("Tên: %s\n", resp.PestDiseaseRecord.Name)
-		fmt.Printf("Tên khoa học: %s\n", resp.PestDiseaseRecord.ScientificName)
-		fmt.Printf("Mức độ: %s\n", resp.PestDiseaseRecord.Severity)
-		fmt.Printf("Diện tích bị ảnh hưởng: %.2f%%\n", resp.PestDiseaseRecord.AffectedAreaPercentage)
-		fmt.Printf("Số cây bị ảnh hưởng: %d\n", resp.PestDiseaseRecord.AffectedPlantCount)
-		fmt.Printf("Phương pháp phát hiện: %s\n", resp.PestDiseaseRecord.DetectionMethod)
-		fmt.Printf("Symptoms: %s\n", resp.PestDiseaseRecord.Symptoms)
-		fmt.Printf("Biện pháp điều trị: %s\n", resp.PestDiseaseRecord.TreatmentApplied)
-		fmt.Printf("Chi phí điều trị: %.2f\n", resp.PestDiseaseRecord.TreatmentCost)
-		fmt.Printf("Treatment Duration: %d days\n", resp.PestDiseaseRecord.TreatmentDurationDays)
-		fmt.Printf("Trạng thái phục hồi: %s\n", resp.PestDiseaseRecord.RecoveryStatus)
-		fmt.Printf("Đánh giá hiệu quả: %d\n", resp.PestDiseaseRecord.EffectivenessRating)
-		fmt.Printf("Biện pháp phòng ngừa: %s\n", resp.PestDiseaseRecord.PreventionMeasures)
-		fmt.Printf("Yếu tố môi trường: %s\n", resp.PestDiseaseRecord.EnvironmentalFactors)
-		fmt.Printf("Ghi chú: %s\n", resp.PestDiseaseRecord.Notes)
-		fmt.Printf("Người tạo: %s\n", resp.PestDiseaseRecord.CreatedBy)
+	fmt.Printf("Kết quả lấy lịch bảo trì:\n")
+	if resp.MaintenanceSchedule != nil {
+		fmt.Printf("ID: %s\n", resp.MaintenanceSchedule.Id)
+		fmt.Printf("Device ID: %s\n", resp.MaintenanceSchedule.DeviceId)
+		fmt.Printf("Maintenance Type: %s\n", resp.MaintenanceSchedule.MaintenanceType)
+		fmt.Printf("Maintenance Category: %s\n", resp.MaintenanceSchedule.MaintenanceCategory)
+		fmt.Printf("Priority: %s\n", resp.MaintenanceSchedule.Priority)
+		fmt.Printf("Scheduled Date: %s\n", resp.MaintenanceSchedule.ScheduledDate)
+		fmt.Printf("Estimated Duration: %.2f hours\n", resp.MaintenanceSchedule.EstimatedDurationHours)
+		fmt.Printf("Technician: %s\n", resp.MaintenanceSchedule.Technician)
+		fmt.Printf("Technician Contact: %s\n", resp.MaintenanceSchedule.TechnicianContact)
+		fmt.Printf("Cost: %.2f\n", resp.MaintenanceSchedule.Cost)
+		fmt.Printf("Parts Replaced: %s\n", resp.MaintenanceSchedule.PartsReplaced)
+		fmt.Printf("Tools Required: %s\n", resp.MaintenanceSchedule.ToolsRequired)
+		fmt.Printf("Safety Precautions: %s\n", resp.MaintenanceSchedule.SafetyPrecautions)
+		fmt.Printf("Status: %s\n", resp.MaintenanceSchedule.Status)
+		fmt.Printf("Notes: %s\n", resp.MaintenanceSchedule.Notes)
+		fmt.Printf("Created By: %s\n", resp.MaintenanceSchedule.CreatedBy)
 	}
 }
 
-func (c *CropServiceClient) TestListPestDiseaseRecords() {
-	fmt.Println("\n=== Kiểm thử Liệt kê Bản ghi Sâu bệnh ===")
+func (c *MaintenanceServiceClient) TestListMaintenanceSchedules() {
+	fmt.Println("\n=== Kiểm thử Liệt kê Lịch bảo trì ===")
 
 	reader := bufio.NewReader(os.Stdin)
 
 	offset, limit := inputPaging(reader)
 
+	// Input filter options
+	fmt.Println("\n--- Bộ lọc (để trống để bỏ qua) ---")
+
+	fmt.Print("Nhập Device ID (UUID): ")
+	deviceId, _ := reader.ReadString('\n')
+	deviceId = cleanInput(deviceId)
+
+	fmt.Print("Nhập trạng thái (scheduled/in_progress/completed/cancelled/postponed), phân cách bằng dấu phẩy: ")
+	statusesStr, _ := reader.ReadString('\n')
+	statusesStr = cleanInput(statusesStr)
+	var statuses []string
+	if statusesStr != "" {
+		statuses = strings.Split(statusesStr, ",")
+		for i, status := range statuses {
+			statuses[i] = strings.TrimSpace(status)
+		}
+	}
+
+	fmt.Print("Nhập loại bảo trì (cleaning/calibration/replacement/repair/inspection/software_update), phân cách bằng dấu phẩy: ")
+	typesStr, _ := reader.ReadString('\n')
+	typesStr = cleanInput(typesStr)
+	var types []string
+	if typesStr != "" {
+		types = strings.Split(typesStr, ",")
+		for i, t := range types {
+			types[i] = strings.TrimSpace(t)
+		}
+	}
+
+	fmt.Print("Nhập danh mục bảo trì (preventive/corrective/emergency/routine), phân cách bằng dấu phẩy: ")
+	categoriesStr, _ := reader.ReadString('\n')
+	categoriesStr = cleanInput(categoriesStr)
+	var categories []string
+	if categoriesStr != "" {
+		categories = strings.Split(categoriesStr, ",")
+		for i, category := range categories {
+			categories[i] = strings.TrimSpace(category)
+		}
+	}
+
+	fmt.Print("Nhập mức độ ưu tiên (low/medium/high/critical), phân cách bằng dấu phẩy: ")
+	prioritiesStr, _ := reader.ReadString('\n')
+	prioritiesStr = cleanInput(prioritiesStr)
+	var priorities []string
+	if prioritiesStr != "" {
+		priorities = strings.Split(prioritiesStr, ",")
+		for i, priority := range priorities {
+			priorities[i] = strings.TrimSpace(priority)
+		}
+	}
+
+	fmt.Print("Nhập ngày bắt đầu (YYYY-MM-DD): ")
+	fromDateStr, _ := reader.ReadString('\n')
+	fromDateStr = cleanInput(fromDateStr)
+	var fromDate *timestamppb.Timestamp
+	if fromDateStr != "" {
+		if t, err := time.Parse("2006-01-02", fromDateStr); err == nil {
+			fromDate = timestamppb.New(t)
+		}
+	}
+
+	fmt.Print("Nhập ngày kết thúc (YYYY-MM-DD): ")
+	toDateStr, _ := reader.ReadString('\n')
+	toDateStr = cleanInput(toDateStr)
+	var toDate *timestamppb.Timestamp
+	if toDateStr != "" {
+		if t, err := time.Parse("2006-01-02", toDateStr); err == nil {
+			toDate = timestamppb.New(t)
+		}
+	}
+
+	filter := &proto_maintenance_schedule.MaintenanceScheduleFilter{}
+	if deviceId != "" {
+		filter.DeviceId = deviceId
+	}
+	if len(statuses) > 0 {
+		filter.Statuses = statuses
+	}
+	if len(types) > 0 {
+		filter.Types = types
+	}
+	if len(categories) > 0 {
+		filter.Categories = categories
+	}
+	if len(priorities) > 0 {
+		filter.Priorities = priorities
+	}
+	if fromDate != nil {
+		filter.FromDate = fromDate
+	}
+	if toDate != nil {
+		filter.ToDate = toDate
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resp, err := c.pestDiseaseRecordClient.ListPestDiseaseRecords(ctx, &proto_pest_disease_record.ListPestDiseaseRecordsRequest{
-		Pagination: &proto_pest_disease_record.Pagination{
-			Page:      offset,
-			PageSize:  limit,
-			SortBy:    "detection_date",
-			SortOrder: "desc",
+	resp, err := c.maintenanceScheduleClient.ListMaintenanceSchedule(ctx, &proto_maintenance_schedule.ListMaintenanceScheduleRequest{
+		Pagination: &proto_common.PaginationRequest{
+			Page:     offset,
+			PageSize: limit,
 		},
+		Filter: filter,
 	})
 	if err != nil {
-		fmt.Printf("Error calling ListPestDiseaseRecords: %v\n", err)
+		fmt.Printf("Error calling ListMaintenanceSchedule: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Kết quả liệt kê bản ghi sâu bệnh:\n")
-	fmt.Printf("Tổng số: %d\n", resp.Total)
-	fmt.Printf("Danh sách bản ghi sâu bệnh:\n")
-	for i, record := range resp.PestDiseaseRecords {
-		fmt.Printf("  [%d] ID: %s, Loại: %s, Tên: %s, Mức độ: %s\n",
-			i+1, record.Id, record.Type, record.Name, record.Severity)
+	fmt.Printf("Kết quả liệt kê lịch bảo trì:\n")
+	fmt.Printf("Tổng số: %d\n", resp.Pagination.Total)
+	fmt.Printf("Trang: %d/%d\n", resp.Pagination.Page, resp.Pagination.TotalPages)
+	fmt.Printf("Kích thước trang: %d\n", resp.Pagination.PageSize)
+	fmt.Printf("Danh sách lịch bảo trì:\n")
+	for i, schedule := range resp.MaintenanceSchedules {
+		fmt.Printf("  [%d] ID: %s, Device ID: %s, Type: %s, Category: %s, Priority: %s, Status: %s\n",
+			i+1, schedule.Id, schedule.DeviceId, schedule.MaintenanceType, schedule.MaintenanceCategory, schedule.Priority, schedule.Status)
 	}
 }
 
-func (c *CropServiceClient) TestGetPestDiseaseRecordsByPlantingCycle() {
-	fmt.Println("\n=== Kiểm thử Lấy Bản ghi Sâu bệnh theo Chu kỳ trồng ===")
+func (c *MaintenanceServiceClient) TestUpdateMaintenanceSchedule() {
+	fmt.Println("\n=== Kiểm thử Cập nhật Lịch bảo trì ===")
 
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Nhập ID chu kỳ trồng: ")
-	plantingCycleId, _ := reader.ReadString('\n')
-	plantingCycleId = cleanInput(plantingCycleId)
+	fmt.Print("Nhập ID lịch bảo trì: ")
+	id, _ := reader.ReadString('\n')
+	id = cleanInput(id)
 
-	offset, limit := inputPaging(reader)
+	fmt.Print("Nhập Device ID (UUID): ")
+	deviceId, _ := reader.ReadString('\n')
+	deviceId = cleanInput(deviceId)
+
+	fmt.Print("Nhập loại bảo trì (cleaning/calibration/replacement/repair/inspection/software_update): ")
+	maintenanceType, _ := reader.ReadString('\n')
+	maintenanceType = cleanInput(maintenanceType)
+
+	fmt.Print("Nhập danh mục bảo trì (preventive/corrective/emergency/routine): ")
+	maintenanceCategory, _ := reader.ReadString('\n')
+	maintenanceCategory = cleanInput(maintenanceCategory)
+
+	fmt.Print("Nhập mức độ ưu tiên (low/medium/high/critical): ")
+	priority, _ := reader.ReadString('\n')
+	priority = cleanInput(priority)
+
+	fmt.Print("Nhập ngày lên lịch (YYYY-MM-DD): ")
+	scheduledDateStr, _ := reader.ReadString('\n')
+	scheduledDateStr = cleanInput(scheduledDateStr)
+	var scheduledDate *timestamppb.Timestamp
+	if scheduledDateStr != "" {
+		if t, err := time.Parse("2006-01-02", scheduledDateStr); err == nil {
+			scheduledDate = timestamppb.New(t)
+		}
+	}
+
+	fmt.Print("Nhập thời gian ước tính (giờ): ")
+	estimatedDurationStr, _ := reader.ReadString('\n')
+	estimatedDurationStr = cleanInput(estimatedDurationStr)
+	estimatedDuration := float64(2.0)
+	if estimatedDurationStr != "" {
+		if d, err := strconv.ParseFloat(estimatedDurationStr, 64); err == nil {
+			estimatedDuration = d
+		}
+	}
+
+	fmt.Print("Nhập ngày hoàn thành (YYYY-MM-DD): ")
+	completedDateStr, _ := reader.ReadString('\n')
+	completedDateStr = cleanInput(completedDateStr)
+	var completedDate *timestamppb.Timestamp
+	if completedDateStr != "" {
+		if t, err := time.Parse("2006-01-02", completedDateStr); err == nil {
+			completedDate = timestamppb.New(t)
+		}
+	}
+
+	fmt.Print("Nhập thời gian thực tế (giờ): ")
+	actualDurationStr, _ := reader.ReadString('\n')
+	actualDurationStr = cleanInput(actualDurationStr)
+	actualDuration := float64(0.0)
+	if actualDurationStr != "" {
+		if d, err := strconv.ParseFloat(actualDurationStr, 64); err == nil {
+			actualDuration = d
+		}
+	}
+
+	fmt.Print("Nhập tên kỹ thuật viên: ")
+	technician, _ := reader.ReadString('\n')
+	technician = cleanInput(technician)
+
+	fmt.Print("Nhập liên hệ kỹ thuật viên: ")
+	technicianContact, _ := reader.ReadString('\n')
+	technicianContact = cleanInput(technicianContact)
+
+	fmt.Print("Nhập chi phí: ")
+	costStr, _ := reader.ReadString('\n')
+	costStr = cleanInput(costStr)
+	cost := float64(100.0)
+	if costStr != "" {
+		if c, err := strconv.ParseFloat(costStr, 64); err == nil {
+			cost = c
+		}
+	}
+
+	fmt.Print("Nhập linh kiện thay thế: ")
+	partsReplaced, _ := reader.ReadString('\n')
+	partsReplaced = cleanInput(partsReplaced)
+
+	fmt.Print("Nhập dụng cụ cần thiết: ")
+	toolsRequired, _ := reader.ReadString('\n')
+	toolsRequired = cleanInput(toolsRequired)
+
+	fmt.Print("Nhập biện pháp an toàn: ")
+	safetyPrecautions, _ := reader.ReadString('\n')
+	safetyPrecautions = cleanInput(safetyPrecautions)
+
+	fmt.Print("Nhập ghi chú trước bảo trì: ")
+	preMaintenanceReadings, _ := reader.ReadString('\n')
+	preMaintenanceReadings = cleanInput(preMaintenanceReadings)
+
+	fmt.Print("Nhập ghi chú sau bảo trì: ")
+	postMaintenanceReadings, _ := reader.ReadString('\n')
+	postMaintenanceReadings = cleanInput(postMaintenanceReadings)
+
+	fmt.Print("Nhập giá trị hiệu chuẩn: ")
+	calibrationValues, _ := reader.ReadString('\n')
+	calibrationValues = cleanInput(calibrationValues)
+
+	fmt.Print("Nhập kết quả kiểm tra: ")
+	testResults, _ := reader.ReadString('\n')
+	testResults = cleanInput(testResults)
+
+	fmt.Print("Nhập trạng thái mới (scheduled/in_progress/completed/cancelled/postponed): ")
+	status, _ := reader.ReadString('\n')
+	status = cleanInput(status)
+
+	fmt.Print("Nhập đánh giá hoàn thành (1-5): ")
+	ratingStr, _ := reader.ReadString('\n')
+	ratingStr = cleanInput(ratingStr)
+	rating := int32(0)
+	if ratingStr != "" {
+		if r, err := strconv.Atoi(ratingStr); err == nil {
+			rating = int32(r)
+		}
+	}
+
+	fmt.Print("Nhập ngày bảo trì tiếp theo (YYYY-MM-DD): ")
+	nextMaintenanceDateStr, _ := reader.ReadString('\n')
+	nextMaintenanceDateStr = cleanInput(nextMaintenanceDateStr)
+	var nextMaintenanceDate *timestamppb.Timestamp
+	if nextMaintenanceDateStr != "" {
+		if t, err := time.Parse("2006-01-02", nextMaintenanceDateStr); err == nil {
+			nextMaintenanceDate = timestamppb.New(t)
+		}
+	}
+
+	fmt.Print("Nhập khoảng cách bảo trì (ngày): ")
+	intervalStr, _ := reader.ReadString('\n')
+	intervalStr = cleanInput(intervalStr)
+	interval := int32(30)
+	if intervalStr != "" {
+		if i, err := strconv.Atoi(intervalStr); err == nil {
+			interval = int32(i)
+		}
+	}
+
+	fmt.Print("Ảnh hưởng bảo hành (true/false): ")
+	warrantyImpactStr, _ := reader.ReadString('\n')
+	warrantyImpactStr = cleanInput(warrantyImpactStr)
+	warrantyImpact := false
+	if warrantyImpactStr == "true" {
+		warrantyImpact = true
+	}
+
+	fmt.Print("Nhập thời gian ngừng hoạt động (phút): ")
+	downtimeStr, _ := reader.ReadString('\n')
+	downtimeStr = cleanInput(downtimeStr)
+	downtime := int32(0)
+	if downtimeStr != "" {
+		if d, err := strconv.Atoi(downtimeStr); err == nil {
+			downtime = int32(d)
+		}
+	}
+
+	fmt.Print("Nhập ghi chú: ")
+	notes, _ := reader.ReadString('\n')
+	notes = cleanInput(notes)
+
+	fmt.Print("Nhập nhật ký bảo trì: ")
+	maintenanceLog, _ := reader.ReadString('\n')
+	maintenanceLog = cleanInput(maintenanceLog)
+
+	fmt.Print("Nhập hình ảnh trước: ")
+	beforeImages, _ := reader.ReadString('\n')
+	beforeImages = cleanInput(beforeImages)
+
+	fmt.Print("Nhập hình ảnh sau: ")
+	afterImages, _ := reader.ReadString('\n')
+	afterImages = cleanInput(afterImages)
+
+	fmt.Print("Nhập người tạo (UUID): ")
+	createdBy, _ := reader.ReadString('\n')
+	createdBy = cleanInput(createdBy)
+
+	// Convert image strings to slices
+	var beforeImagesSlice []string
+	if beforeImages != "" {
+		beforeImagesSlice = []string{beforeImages}
+	}
+	var afterImagesSlice []string
+	if afterImages != "" {
+		afterImagesSlice = []string{afterImages}
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resp, err := c.pestDiseaseRecordClient.GetPestDiseaseRecordsByPlantingCycle(ctx, &proto_pest_disease_record.GetPestDiseaseRecordsByPlantingCycleRequest{
-		PlantingCycleId: plantingCycleId,
-		Pagination: &proto_pest_disease_record.Pagination{
-			Page:      offset,
-			PageSize:  limit,
-			SortBy:    "detection_date",
-			SortOrder: "desc",
-		},
+	resp, err := c.maintenanceScheduleClient.UpdateMaintenanceSchedule(ctx, &proto_maintenance_schedule.UpdateMaintenanceScheduleRequest{
+		Id:                      id,
+		DeviceId:                deviceId,
+		MaintenanceType:         maintenanceType,
+		MaintenanceCategory:     maintenanceCategory,
+		Priority:                priority,
+		ScheduledDate:           scheduledDate,
+		EstimatedDurationHours:  estimatedDuration,
+		CompletedDate:           completedDate,
+		ActualDurationHours:     actualDuration,
+		Technician:              technician,
+		TechnicianContact:       technicianContact,
+		Cost:                    cost,
+		PartsReplaced:           partsReplaced,
+		ToolsRequired:           toolsRequired,
+		SafetyPrecautions:       safetyPrecautions,
+		PreMaintenanceReadings:  preMaintenanceReadings,
+		PostMaintenanceReadings: postMaintenanceReadings,
+		CalibrationValues:       calibrationValues,
+		TestResults:             testResults,
+		Status:                  status,
+		CompletionRating:        rating,
+		NextMaintenanceDate:     nextMaintenanceDate,
+		MaintenanceIntervalDays: interval,
+		WarrantyImpact:          warrantyImpact,
+		DowntimeMinutes:         downtime,
+		Notes:                   notes,
+		MaintenanceLog:          maintenanceLog,
+		BeforeImages:            beforeImagesSlice,
+		AfterImages:             afterImagesSlice,
+		CreatedBy:               createdBy,
 	})
 	if err != nil {
-		fmt.Printf("Error calling GetPestDiseaseRecordsByPlantingCycle: %v\n", err)
+		fmt.Printf("Error calling UpdateMaintenanceSchedule: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Kết quả lấy bản ghi sâu bệnh theo chu kỳ trồng:\n")
-	fmt.Printf("Tổng số: %d\n", resp.Total)
-	fmt.Printf("Danh sách bản ghi sâu bệnh:\n")
-	for i, record := range resp.PestDiseaseRecords {
-		fmt.Printf("  [%d] ID: %s, Loại: %s, Tên: %s, Mức độ: %s, Trạng thái: %s\n",
-			i+1, record.Id, record.Type, record.Name, record.Severity, record.RecoveryStatus)
+	fmt.Printf("Kết quả cập nhật lịch bảo trì:\n")
+	if resp.MaintenanceSchedule != nil {
+		fmt.Printf("ID: %s\n", resp.MaintenanceSchedule.Id)
+		fmt.Printf("Device ID: %s\n", resp.MaintenanceSchedule.DeviceId)
+		fmt.Printf("Maintenance Type: %s\n", resp.MaintenanceSchedule.MaintenanceType)
+		fmt.Printf("Maintenance Category: %s\n", resp.MaintenanceSchedule.MaintenanceCategory)
+		fmt.Printf("Priority: %s\n", resp.MaintenanceSchedule.Priority)
+		fmt.Printf("Status: %s\n", resp.MaintenanceSchedule.Status)
+		fmt.Printf("Estimated Duration: %.2f hours\n", resp.MaintenanceSchedule.EstimatedDurationHours)
+		fmt.Printf("Actual Duration: %.2f hours\n", resp.MaintenanceSchedule.ActualDurationHours)
+		fmt.Printf("Technician: %s\n", resp.MaintenanceSchedule.Technician)
+		fmt.Printf("Cost: %.2f\n", resp.MaintenanceSchedule.Cost)
+		fmt.Printf("Completion Rating: %d\n", resp.MaintenanceSchedule.CompletionRating)
+		fmt.Printf("Maintenance Interval: %d days\n", resp.MaintenanceSchedule.MaintenanceIntervalDays)
+		fmt.Printf("Warranty Impact: %t\n", resp.MaintenanceSchedule.WarrantyImpact)
+		fmt.Printf("Downtime: %d minutes\n", resp.MaintenanceSchedule.DowntimeMinutes)
+		fmt.Printf("Notes: %s\n", resp.MaintenanceSchedule.Notes)
+		fmt.Printf("Created By: %s\n", resp.MaintenanceSchedule.CreatedBy)
 	}
+}
+
+func (c *MaintenanceServiceClient) TestDeleteMaintenanceSchedule() {
+	fmt.Println("\n=== Kiểm thử Xóa Lịch bảo trì ===")
+
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Nhập ID lịch bảo trì: ")
+	id, _ := reader.ReadString('\n')
+	id = cleanInput(id)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err := c.maintenanceScheduleClient.DeleteMaintenanceSchedule(ctx, &proto_maintenance_schedule.DeleteMaintenanceScheduleRequest{
+		Id: id,
+	})
+	if err != nil {
+		fmt.Printf("Error calling DeleteMaintenanceSchedule: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Lịch bảo trì đã được xóa thành công!\n")
 }
 
 // ================== Menu Functions ==================
 
 func printMainMenu() {
-	fmt.Println("\n=== Ứng dụng kiểm thử gRPC Production Service ===")
-	fmt.Println("1. Dịch vụ Bản ghi Thu hoạch")
-	fmt.Println("2. Dịch vụ Bản ghi Sâu bệnh")
+	fmt.Println("\n=== Ứng dụng kiểm thử gRPC Maintenance Service ===")
+	fmt.Println("1. Dịch vụ Lịch Bảo trì")
 	fmt.Println("0. Thoát")
 	fmt.Print("Nhập lựa chọn của bạn: ")
 }
 
-func printHarvestRecordMenu() {
-	fmt.Println("\n=== Dịch vụ Bản ghi Thu hoạch ===")
-	fmt.Println("1. Tạo bản ghi thu hoạch")
-	fmt.Println("2. Lấy bản ghi thu hoạch")
-	fmt.Println("3. Liệt kê bản ghi thu hoạch")
-	fmt.Println("4. Lấy bản ghi theo chu kỳ trồng")
-	fmt.Println("0. Quay lại menu chính")
-	fmt.Print("Nhập lựa chọn của bạn: ")
-}
-
-func printPestDiseaseRecordMenu() {
-	fmt.Println("\n=== Dịch vụ Bản ghi Sâu bệnh ===")
-	fmt.Println("1. Tạo bản ghi sâu bệnh")
-	fmt.Println("2. Lấy bản ghi sâu bệnh")
-	fmt.Println("3. Liệt kê bản ghi sâu bệnh")
-	fmt.Println("4. Lấy bản ghi theo chu kỳ trồng")
+func printMaintenanceScheduleMenu() {
+	fmt.Println("\n=== Dịch vụ Lịch Bảo trì ===")
+	fmt.Println("1. Tạo lịch bảo trì")
+	fmt.Println("2. Lấy lịch bảo trì")
+	fmt.Println("3. Liệt kê lịch bảo trì")
+	fmt.Println("4. Cập nhật lịch bảo trì")
+	fmt.Println("5. Xóa lịch bảo trì")
 	fmt.Println("0. Quay lại menu chính")
 	fmt.Print("Nhập lựa chọn của bạn: ")
 }
@@ -697,7 +759,7 @@ func main() {
 	}
 
 	fmt.Printf("Đang kết nối tới máy chủ gRPC tại %s...\n", address)
-	client, err := NewCropServiceClient(address)
+	client, err := NewMaintenanceServiceClient(address)
 	if err != nil {
 		log.Fatalf("Failed to create gRPC client: %v", err)
 	}
@@ -714,46 +776,23 @@ func main() {
 
 		switch choice {
 		case "1":
-			// Dịch vụ Bản ghi Thu hoạch
+			// Dịch vụ Lịch Bảo trì
 			for {
-				printHarvestRecordMenu()
+				printMaintenanceScheduleMenu()
 				subChoice, _ := reader.ReadString('\n')
 				subChoice = cleanInput(subChoice)
 
 				switch subChoice {
 				case "1":
-					client.TestCreateHarvestRecord()
+					client.TestCreateMaintenanceSchedule()
 				case "2":
-					client.TestGetHarvestRecord()
+					client.TestGetMaintenanceSchedule()
 				case "3":
-					client.TestListHarvestRecords()
+					client.TestListMaintenanceSchedules()
 				case "4":
-					client.TestGetHarvestRecordsByPlantingCycle()
-				case "0":
-				default:
-					fmt.Println("Invalid choice. Please try again.")
-					continue
-				}
-				if subChoice == "0" {
-					break
-				}
-			}
-		case "2":
-			// Dịch vụ Bản ghi Sâu bệnh
-			for {
-				printPestDiseaseRecordMenu()
-				subChoice, _ := reader.ReadString('\n')
-				subChoice = cleanInput(subChoice)
-
-				switch subChoice {
-				case "1":
-					client.TestCreatePestDiseaseRecord()
-				case "2":
-					client.TestGetPestDiseaseRecord()
-				case "3":
-					client.TestListPestDiseaseRecords()
-				case "4":
-					client.TestGetPestDiseaseRecordsByPlantingCycle()
+					client.TestUpdateMaintenanceSchedule()
+				case "5":
+					client.TestDeleteMaintenanceSchedule()
 				case "0":
 				default:
 					fmt.Println("Invalid choice. Please try again.")

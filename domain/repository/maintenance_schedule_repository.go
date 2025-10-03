@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"production_service/domain/entity"
 
@@ -22,6 +23,6 @@ type MaintenanceScheduleFilter struct {
 	Types      []entity.MaintenanceType
 	Categories []entity.MaintenanceCategory
 	Priorities []entity.Priority
-	FromDate   *string
-	ToDate     *string
+	FromDate   *time.Time
+	ToDate     *time.Time
 }

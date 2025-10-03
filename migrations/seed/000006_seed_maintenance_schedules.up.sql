@@ -58,8 +58,8 @@ INSERT INTO maintenance_schedules (
         15,
         'Routine cleaning before peak season',
         'Step 1: Power off; Step 2: Clean filter; Step 3: Power on',
-        '[]'::jsonb,
-        '[]'::jsonb,
+        ARRAY['22a61d20-e3d5-44f0-aec4-e286ef0936ba', '22a61d20-e3d5-44f0-aec4-e286ef0936ba']::UUID[],
+        ARRAY['22a61d20-e3d5-44f0-aec4-e286ef0936ba', '22a61d20-e3d5-44f0-aec4-e286ef0936ba']::UUID[],
         gen_random_uuid()
     ),
     (
@@ -89,8 +89,8 @@ INSERT INTO maintenance_schedules (
         45,
         'Quarterly calibration as per SOP',
         'Adjusted sensor offset and verified readings',
-        '[]'::jsonb,
-        '[]'::jsonb,
+        ARRAY['22a61d20-e3d5-44f0-aec4-e286ef0936ba', '22a61d20-e3d5-44f0-aec4-e286ef0936ba']::UUID[],
+        ARRAY['22a61d20-e3d5-44f0-aec4-e286ef0936ba', '22a61d20-e3d5-44f0-aec4-e286ef0936ba']::UUID[],
         gen_random_uuid()
     ),
     (
@@ -120,8 +120,8 @@ INSERT INTO maintenance_schedules (
         180,
         'Emergency repair due to pump failure',
         'Diagnosed pump motor; replacement in progress',
-        '[]'::jsonb,
-        '[]'::jsonb,
+        ARRAY['22a61d20-e3d5-44f0-aec4-e286ef0936ba', '22a61d20-e3d5-44f0-aec4-e286ef0936ba']::UUID[],
+        ARRAY['22a61d20-e3d5-44f0-aec4-e286ef0936ba', '22a61d20-e3d5-44f0-aec4-e286ef0936ba']::UUID[],
         gen_random_uuid()
     );
 

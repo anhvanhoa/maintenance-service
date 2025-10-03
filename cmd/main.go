@@ -4,6 +4,7 @@ import (
 	"context"
 	"production_service/bootstrap"
 	"production_service/infrastructure/grpc_service"
+	maintenance_schedule_service "production_service/infrastructure/grpc_service/maintenance_schedule"
 
 	"github.com/anhvanhoa/service-core/domain/discovery"
 )
@@ -31,8 +32,9 @@ func StartGRPCServer() {
 	}
 	discovery.Register()
 
+	maintenanceScheduleService := maintenance_schedule_service.NewMaintenanceScheduleService(app.Repos)
 	grpcSrv := grpc_service.NewGRPCServer(
-		env, log,
+		env, log, maintenanceScheduleService,
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())

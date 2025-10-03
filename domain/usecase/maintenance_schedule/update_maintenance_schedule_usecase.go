@@ -9,7 +9,8 @@ import (
 	"production_service/domain/repository"
 )
 
-type CreateMaintenanceScheduleRequest struct {
+type UpdateMaintenanceScheduleRequest struct {
+	ID                      string
 	DeviceID                string
 	MaintenanceType         entity.MaintenanceType
 	MaintenanceCategory     entity.MaintenanceCategory
@@ -41,20 +42,29 @@ type CreateMaintenanceScheduleRequest struct {
 	CreatedBy               string
 }
 
-type CreateMaintenanceScheduleUsecaseI interface {
-	Execute(ctx context.Context, req CreateMaintenanceScheduleRequest) (*entity.MaintenanceSchedule, error)
+type UpdateMaintenanceScheduleUsecaseI interface {
+	Execute(ctx context.Context, req UpdateMaintenanceScheduleRequest) (*entity.MaintenanceSchedule, error)
 }
 
-type CreateMaintenanceScheduleUsecase struct {
+type UpdateMaintenanceScheduleUsecase struct {
 	repo repository.MaintenanceScheduleRepository
 }
 
-func NewCreateMaintenanceScheduleUsecase(repo repository.MaintenanceScheduleRepository) CreateMaintenanceScheduleUsecaseI {
-	return &CreateMaintenanceScheduleUsecase{repo: repo}
+func NewUpdateMaintenanceScheduleUsecase(repo repository.MaintenanceScheduleRepository) UpdateMaintenanceScheduleUsecaseI {
+	return &UpdateMaintenanceScheduleUsecase{repo: repo}
 }
 
-func (u *CreateMaintenanceScheduleUsecase) Execute(ctx context.Context, req CreateMaintenanceScheduleRequest) (*entity.MaintenanceSchedule, error) {
-	m := &entity.MaintenanceSchedule{
+func (u *UpdateMaintenanceScheduleUsecase) Execute(ctx context.Context, req UpdateMaintenanceScheduleRequest) (*entity.MaintenanceSchedule, error) {
+	if err := u.validate(req); err != nil {
+		return nil, err
+	}
+	_, err := u.repo.GetByID(ctx, req.ID)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	existing := &entity.MaintenanceSchedule{
+		ID:                      req.ID,
 		DeviceID:                req.DeviceID,
 		MaintenanceType:         req.MaintenanceType,
 		MaintenanceCategory:     req.MaintenanceCategory,
@@ -76,50 +86,52 @@ func (u *CreateMaintenanceScheduleUsecase) Execute(ctx context.Context, req Crea
 		DowntimeMinutes:         req.DowntimeMinutes,
 		Notes:                   req.Notes,
 		MaintenanceLog:          req.MaintenanceLog,
-		CreatedBy:               req.CreatedBy,
 		BeforeImages:            req.BeforeImages,
 		AfterImages:             req.AfterImages,
-	}
-
-	var err error
-
-	if m.Status == "" {
-		m.Status = entity.StatusScheduled
+		CreatedBy:               req.CreatedBy,
 	}
 
 	if req.PartsReplaced != "" {
-		err = json.Unmarshal([]byte(req.PartsReplaced), &m.PartsReplaced)
+		err = json.Unmarshal([]byte(req.PartsReplaced), &existing.PartsReplaced)
 		if err != nil {
 			return nil, ErrUnmarshalFailed
 		}
 	}
 	if req.ToolsRequired != "" {
-		err = json.Unmarshal([]byte(req.ToolsRequired), &m.ToolsRequired)
+		err = json.Unmarshal([]byte(req.ToolsRequired), &existing.ToolsRequired)
 		if err != nil {
 			return nil, ErrUnmarshalFailed
 		}
 	}
 	if req.PreMaintenanceReadings != "" {
-		err = json.Unmarshal([]byte(req.PreMaintenanceReadings), &m.PreMaintenanceReadings)
+		err = json.Unmarshal([]byte(req.PreMaintenanceReadings), &existing.PreMaintenanceReadings)
 		if err != nil {
 			return nil, ErrUnmarshalFailed
 		}
 	}
 	if req.PostMaintenanceReadings != "" {
-		err = json.Unmarshal([]byte(req.PostMaintenanceReadings), &m.PostMaintenanceReadings)
+		err = json.Unmarshal([]byte(req.PostMaintenanceReadings), &existing.PostMaintenanceReadings)
 		if err != nil {
 			return nil, ErrUnmarshalFailed
 		}
 	}
 	if req.CalibrationValues != "" {
-		err = json.Unmarshal([]byte(req.CalibrationValues), &m.CalibrationValues)
+		err = json.Unmarshal([]byte(req.CalibrationValues), &existing.CalibrationValues)
 		if err != nil {
 			return nil, ErrUnmarshalFailed
 		}
 	}
 
-	if err := u.repo.Create(ctx, m); err != nil {
-		return nil, ErrCreateFailed
+	if err := u.repo.Update(ctx, existing); err != nil {
+		return nil, ErrUpdateFailed
 	}
-	return m, nil
+
+	return existing, nil
+}
+
+func (u *UpdateMaintenanceScheduleUsecase) validate(req UpdateMaintenanceScheduleRequest) error {
+	if req.ID == "" {
+		return ErrIdIsRequired
+	}
+	return nil
 }
