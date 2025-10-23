@@ -15,8 +15,7 @@ type RepositoriesImpl struct {
 	MaintenanceScheduleRepository repository.MaintenanceScheduleRepository
 }
 
-func InitRepositories(db *pg.DB) Repositories {
-	helper := utils.NewHelper()
+func InitRepositories(db *pg.DB, helper utils.Helper) Repositories {
 	return &RepositoriesImpl{
 		MaintenanceScheduleRepository: NewMaintenanceScheduleRepository(db, helper),
 	}
