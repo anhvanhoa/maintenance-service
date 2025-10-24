@@ -34,7 +34,8 @@ type Env struct {
 func NewEnv(env any) {
 	setting := config.DefaultSettingsConfig()
 	if setting.IsProduction() {
-		setting.SetFile("prod.config")
+		setting.SetPath("/config")
+		setting.SetFile("maintenance_service.config")
 	} else {
 		setting.SetFile("dev.config")
 	}
