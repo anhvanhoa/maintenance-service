@@ -8,7 +8,7 @@ services:
     image: maintenance-service:latest
     container_name: maintenance_service_app
     ports:
-      - "50059:50059"
+      - "40059:40059"
     networks:
       - sf_network
     environment:
@@ -25,7 +25,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:50059/health",
+          "http://localhost:40059/health",
         ]
       interval: 30s
       timeout: 10s
